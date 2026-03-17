@@ -46,7 +46,7 @@ public class QuestionSetApplicationService
     getOwnedIntv(userId, intvId);
     PreparationForQuestionGeneration preparation = loadPreparationPort.loadByIntvId(intvId);
     try {
-      generateCustomQuestionPort.request(preparation, "/internal/v1/questions/callback");
+      generateCustomQuestionPort.request(preparation);
     } catch (Exception e) {
       log.error("AI question generation request failed. intvId={}", intvId, e);
       create(new CreateQuestionSetCommand(intvId, "FAIL", List.of(), "AI server unavailable"));

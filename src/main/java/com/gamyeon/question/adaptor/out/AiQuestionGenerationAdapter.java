@@ -14,14 +14,12 @@ public class AiQuestionGenerationAdapter implements GenerateCustomQuestionPort {
   private final PythonQuestionGenerationFeignClient pythonQuestionGenerationFeignClient;
 
   @Override
-  public void request(PreparationForQuestionGeneration preparation, String callbackUrl) {
+  public void request(PreparationForQuestionGeneration preparation) {
     log.info(
-        "Calling AI question generation API. preparationId={}, intvId={}, callbackUrl={}",
+        "Calling AI question generation API. preparationId={}, intvId={}",
         preparation.preparationId(),
-        preparation.intvId(),
-        callbackUrl);
-    AiQuestionGenerationRequest request =
-        AiQuestionGenerationRequest.from(preparation, callbackUrl);
+        preparation.intvId());
+    AiQuestionGenerationRequest request = AiQuestionGenerationRequest.from(preparation);
     pythonQuestionGenerationFeignClient.requestGeneration(request);
   }
 }

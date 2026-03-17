@@ -3,21 +3,29 @@ package com.gamyeon.intv.presentation;
 import com.gamyeon.common.response.ApiResponse;
 import com.gamyeon.intv.application.dto.command.ChangeStateIntvCommand;
 import com.gamyeon.intv.application.dto.command.UpdateIntvCommand;
+import com.gamyeon.intv.application.dto.result.FinishedIntvDailyCountInfo;
 import com.gamyeon.intv.application.dto.result.IntvInfo;
 import com.gamyeon.intv.application.usecase.ChangeStateUseCase;
 import com.gamyeon.intv.application.usecase.CreateUseCase;
+import com.gamyeon.intv.application.usecase.GetFinishedIntvStatsUseCase;
 import com.gamyeon.intv.application.usecase.UpdateTitleUseCase;
 import com.gamyeon.intv.domain.IntvSuccessCode;
 import com.gamyeon.intv.presentation.dto.request.IntvRequest;
+import com.gamyeon.intv.presentation.dto.response.FinishedIntvDailyCountResponse;
 import com.gamyeon.intv.presentation.dto.response.IntvResponse;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -28,14 +36,17 @@ public class IntvController {
   private final CreateUseCase createUseCase;
   private final ChangeStateUseCase changeStateUseCase;
   private final UpdateTitleUseCase updateTitleUseCase;
+  private final GetFinishedIntvStatsUseCase getFinishedIntvStatsUseCase;
 
   public IntvController(
       CreateUseCase createUseCase,
       ChangeStateUseCase changeStateUseCase,
-      UpdateTitleUseCase updateTitleUseCase) {
+      UpdateTitleUseCase updateTitleUseCase,
+      GetFinishedIntvStatsUseCase getFinishedIntvStatsUseCase) {
     this.createUseCase = createUseCase;
     this.changeStateUseCase = changeStateUseCase;
     this.updateTitleUseCase = updateTitleUseCase;
+    this.getFinishedIntvStatsUseCase = getFinishedIntvStatsUseCase;
   }
 
   @PostMapping
@@ -98,5 +109,25 @@ public class IntvController {
     changeStateUseCase.finish(new ChangeStateIntvCommand(userId, intvId));
 
     return ApiResponse.success(IntvSuccessCode.INTV_FINISHED);
+  }
+
+  @GetMapping("/stats")
+  public ResponseEntity<ApiResponse<List<FinishedIntvDailyCountResponse>>> getFinishedIntvStats(
+      Long userId,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+    userId = 1L;
+    log.info(
+        "Received finished intv stats request. userId={}, startDate={}, endDate={}",
+        userId,
+        startDate,
+        endDate);
+
+    List<FinishedIntvDailyCountInfo> infos =
+        getFinishedIntvStatsUseCase.getFinishedIntvStats(userId, startDate, endDate);
+    List<FinishedIntvDailyCountResponse> response =
+        infos.stream().map(FinishedIntvDailyCountResponse::from).toList();
+
+    return ApiResponse.success(IntvSuccessCode.INTV_FINISHED_STATS_FETCHED, response);
   }
 }

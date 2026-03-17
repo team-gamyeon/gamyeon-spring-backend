@@ -1,5 +1,5 @@
 package com.gamyeon.question.application.port.out;
 
 public interface GenerateCustomQuestionPort {
-  void request(PreparationForQuestionGeneration preparation, String callback);
+  void request(PreparationForQuestionGeneration preparation);
 }

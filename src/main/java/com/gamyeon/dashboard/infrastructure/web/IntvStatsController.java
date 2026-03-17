@@ -10,12 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/intvs")
 @Slf4j
 public class IntvStatsController {
 
@@ -25,7 +23,7 @@ public class IntvStatsController {
     this.intvStatsUseCase = intvStatsUseCase;
   }
 
-  @GetMapping("/stats")
+  @GetMapping("/api/v1/intvs/statsmockup")
   public ResponseEntity<SuccessResponse<List<DailyStat>>> getIntvStats(
       @CurrentUserId Long userId,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
