@@ -13,6 +13,7 @@ import com.gamyeon.report.application.port.out.SaveReportPort;
 import com.gamyeon.report.domain.Report;
 import com.gamyeon.report.infrastructure.web.dto.ReportDetailResponse;
 import com.gamyeon.report.infrastructure.web.dto.ReportListResponse;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -129,8 +130,11 @@ public class ReportQueryService
                       return ReportDetailResponse.QuestionSummary.builder()
                           .index((Integer) map.get("index"))
                           .question((String) map.get("question"))
-                          .answerSummary((String) map.get("answerSummary"))
-                          .feedbackBadges((List<String>) map.get("feedbackBadges"))
+                          .answerSummary((String) map.get("answer_summary"))
+                          .feedbackBadges(
+                              map.get("feedback_badges") instanceof List<?>
+                                  ? (List<String>) map.get("feedback_badges")
+                                  : new ArrayList<>())
                           .feedback(feedback)
                           .mediaUrl(answer != null ? answer.getFileUrl() : null)
                           .build();
@@ -153,7 +157,9 @@ public class ReportQueryService
                       java.time.Instant.parse((String) data.get("created_at")),
                       java.time.ZoneOffset.UTC)
                   : null)
-          .competencyScores((java.util.Map<String, Integer>) data.get("competency_scores"))
+          .competencyScores(
+              convertCompetencyScores(
+                  (java.util.Map<String, Integer>) data.get("competency_scores")))
           .strengths((List<String>) data.get("strengths"))
           .weaknesses((List<String>) data.get("weaknesses"))
           .questionSummaries(questionSummaries)
@@ -168,7 +174,7 @@ public class ReportQueryService
   private Long extractQuestionSetId(java.util.Map<String, Object> map) {
     // questionSummaries의 Map에서 questionSetId 추출
     // 1순위: questionSetId 필드
-    Object questionSetId = map.get("questionSetId");
+    Object questionSetId = map.get("question_set_id");
     if (questionSetId instanceof Number) {
       return ((Number) questionSetId).longValue();
     }
@@ -178,5 +184,33 @@ public class ReportQueryService
       return ((Number) index).longValue();
     }
     return 0L; // fallback
+  }
+
+  private java.util.Map<String, Integer> convertCompetencyScores(
+      java.util.Map<String, Integer> raw) {
+    if (raw == null) return null;
+    java.util.Map<String, Integer> result = new java.util.LinkedHashMap<>();
+    raw.forEach(
+        (key, value) -> {
+          String camel = toCamelCase(key);
+          result.put(camel, value);
+        });
+    return result;
+  }
+
+  private String toCamelCase(String snake) {
+    StringBuilder sb = new StringBuilder();
+    boolean upper = false;
+    for (char c : snake.toCharArray()) {
+      if (c == '_') {
+        upper = true;
+      } else if (upper) {
+        sb.append(Character.toUpperCase(c));
+        upper = false;
+      } else {
+        sb.append(c);
+      }
+    }
+    return sb.toString();
   }
 }
