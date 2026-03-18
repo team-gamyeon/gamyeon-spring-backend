@@ -32,9 +32,10 @@ public class ReportController {
         ReportSuccessCode.REPORT_LIST_SUCCESS, getReportListUseCase.getList(userId));
   }
 
-  @GetMapping("/detail/{intvId}")
+  @GetMapping("/{intvId}")
   public ResponseEntity<ApiResponse<ReportDetailResponse>> getDetail(
-      @PathVariable Long intvId, @RequestParam Long userId) {
+      @PathVariable Long intvId, Long userId) {
+    userId = 1L;
     log.info("[Report] 상세 조회 - intvId={}, userId={}", intvId, userId);
     return ApiResponse.success(
         ReportSuccessCode.REPORT_DETAIL_SUCCESS, getReportDetailUseCase.getDetail(intvId, userId));
