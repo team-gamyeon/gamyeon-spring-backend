@@ -2,7 +2,6 @@ package com.gamyeon.intv.infrastructure;
 
 import com.gamyeon.intv.application.dto.result.FinishedIntvDailyCountInfo;
 import com.gamyeon.intv.domain.Intv;
-import com.gamyeon.intv.domain.IntvStatus;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,7 +26,7 @@ public interface JpaIntvRepository extends JpaRepository<Intv, Long> {
       nativeQuery = true)
   List<FinishedIntvDailyCountProjection> findFinishedIntvCountByDateAndUserId(
       @Param("userId") Long userId,
-      @Param("status") IntvStatus status,
+      @Param("status") String status,
       @Param("startDateTime") LocalDateTime startDateTime,
       @Param("endDateTime") LocalDateTime endDateTime);
 

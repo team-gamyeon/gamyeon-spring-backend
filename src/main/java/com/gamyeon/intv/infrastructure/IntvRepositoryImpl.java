@@ -31,7 +31,7 @@ public class IntvRepositoryImpl implements IntvRepository {
       Long userId, LocalDateTime startDateTime, LocalDateTime endDateTime) {
     return jpaIntvRepository
         .findFinishedIntvCountByDateAndUserId(
-            userId, IntvStatus.FINISHED, startDateTime, endDateTime)
+            userId, IntvStatus.FINISHED.name(), startDateTime, endDateTime)
         .stream()
         .map(JpaIntvRepository.FinishedIntvDailyCountProjection::toInfo)
         .toList();
