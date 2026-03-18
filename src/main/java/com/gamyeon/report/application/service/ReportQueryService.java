@@ -13,7 +13,6 @@ import com.gamyeon.report.application.port.out.SaveReportPort;
 import com.gamyeon.report.domain.Report;
 import com.gamyeon.report.infrastructure.web.dto.ReportDetailResponse;
 import com.gamyeon.report.infrastructure.web.dto.ReportListResponse;
-import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -150,7 +149,9 @@ public class ReportQueryService
                   : null)
           .createdAt(
               data.get("created_at") != null
-                  ? LocalDateTime.parse((String) data.get("created_at"))
+                  ? java.time.LocalDateTime.ofInstant(
+                      java.time.Instant.parse((String) data.get("created_at")),
+                      java.time.ZoneOffset.UTC)
                   : null)
           .competencyScores((java.util.Map<String, Integer>) data.get("competency_scores"))
           .strengths((List<String>) data.get("strengths"))
