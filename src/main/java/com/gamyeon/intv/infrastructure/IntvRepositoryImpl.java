@@ -29,7 +29,11 @@ public class IntvRepositoryImpl implements IntvRepository {
   @Override
   public List<FinishedIntvDailyCountInfo> findFinishedIntvCountByDateAndUserId(
       Long userId, LocalDateTime startDateTime, LocalDateTime endDateTime) {
-    return jpaIntvRepository.findFinishedIntvCountByDateAndUserId(
-        userId, IntvStatus.FINISHED, startDateTime, endDateTime);
+    return jpaIntvRepository
+        .findFinishedIntvCountByDateAndUserId(
+            userId, IntvStatus.FINISHED, startDateTime, endDateTime)
+        .stream()
+        .map(JpaIntvRepository.FinishedIntvDailyCountProjection::toInfo)
+        .toList();
   }
 }
