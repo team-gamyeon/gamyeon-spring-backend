@@ -1,20 +1,20 @@
 package com.gamyeon.answer.adapter.in.web;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.gamyeon.answer.application.port.in.HandleAnswerSttCallbackCommand;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record AnswerSttCallbackRequest(
-    Long interviewId,
-    @NotNull Long questionId,
+    @NotNull Long intvId,
+    @NotNull Long questionSetId,
     Boolean degraded,
     @Valid AnswerText answerText,
     String errorMessage) {
 
-  public HandleAnswerSttCallbackCommand toCommand() {
-    String correctedTranscript = answerText == null ? null : answerText.correctedTranscript();
-    return new HandleAnswerSttCallbackCommand(questionId, correctedTranscript, errorMessage);
+  public HandleAnswerSttCallbackCommand toCommand(JsonNode callbackPayload) {
+    return new HandleAnswerSttCallbackCommand(intvId, questionSetId, callbackPayload, errorMessage);
   }
 
   public record AnswerText(

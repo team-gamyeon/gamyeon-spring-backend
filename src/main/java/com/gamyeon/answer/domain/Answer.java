@@ -1,5 +1,6 @@
 package com.gamyeon.answer.domain;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.gamyeon.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,6 +11,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "answers")
@@ -45,8 +48,9 @@ public class Answer extends BaseEntity {
   @Column(nullable = false, length = 30)
   private AnswerStatus status;
 
-  @Column(columnDefinition = "TEXT")
-  private String content;
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(columnDefinition = "jsonb")
+  private JsonNode content;
 
   @Column(columnDefinition = "TEXT")
   private String errorMessage;
@@ -88,14 +92,15 @@ public class Answer extends BaseEntity {
     this.errorMessage = null;
   }
 
-  public void completeStt(String content) {
+  public void completeStt(JsonNode content) {
     this.status = AnswerStatus.STT_COMPLETED;
     this.content = content;
     this.errorMessage = null;
   }
 
-  public void failStt(String errorMessage) {
+  public void failStt(String errorMessage, JsonNode content) {
     this.status = AnswerStatus.STT_FAILED;
+    this.content = content;
     this.errorMessage = errorMessage;
   }
 }

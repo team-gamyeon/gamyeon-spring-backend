@@ -170,17 +170,18 @@ public class AnswerApplicationService
   @Override
   public void handle(HandleAnswerSttCallbackCommand command) {
     log.info(
-        "Handling STT callback. questionId={}, hasError={}, correctedTranscriptLength={}",
-        command.questionId(),
+        "Handling STT callback. intvId={}, questionSetId={}, hasError={}, hasPayload={}",
+        command.intvId(),
+        command.questionSetId(),
         command.errorMessage() != null && !command.errorMessage().isBlank(),
-        command.correctedTranscript() == null ? 0 : command.correctedTranscript().length());
+        command.callbackPayload() != null);
     Answer answer =
         answerRepository
-            .findByQuestionSetId(command.questionId())
+            .findByQuestionSetId(command.questionSetId())
             .orElseThrow(() -> new AnswerException(AnswerErrorCode.ANSWER_NOT_FOUND));
 
     if (command.errorMessage() != null && !command.errorMessage().isBlank()) {
-      answer.failStt(command.errorMessage());
+      answer.failStt(command.errorMessage(), command.callbackPayload());
       answerRepository.save(answer);
       log.warn(
           "STT callback reported failure. answerId={}, questionSetId={}, errorMessage={}",
@@ -190,7 +191,7 @@ public class AnswerApplicationService
       return;
     }
 
-    answer.completeStt(command.correctedTranscript());
+    answer.completeStt(command.callbackPayload());
     answerRepository.save(answer);
     log.info(
         "STT callback completed. answerId={}, questionSetId={}",

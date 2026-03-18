@@ -1,5 +1,6 @@
 package com.gamyeon.answer.adapter.in.web;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamyeon.answer.application.port.in.HandleAnswerSttCallbackUseCase;
 import com.gamyeon.answer.domain.AnswerSuccessCode;
 import com.gamyeon.common.response.ApiResponse;
@@ -17,15 +18,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class AnswerCallbackController {
 
   private final HandleAnswerSttCallbackUseCase handleAnswerSttCallbackUseCase;
+  private final ObjectMapper objectMapper;
 
-  @PostMapping("/internal/v1/answers/callback")
+  @PostMapping("/internal/v1/answers/stt/callback")
   public ResponseEntity<ApiResponse<Void>> handleSttCallback(
       @Valid @RequestBody AnswerSttCallbackRequest request) {
     log.info(
-        "Received STT callback request. questionId={}, hasError={}",
-        request.questionId(),
+        "Received STT callback request. intvId={}, questionSetId={}, hasError={}",
+        request.intvId(),
+        request.questionSetId(),
         request.errorMessage() != null && !request.errorMessage().isBlank());
-    handleAnswerSttCallbackUseCase.handle(request.toCommand());
+    handleAnswerSttCallbackUseCase.handle(request.toCommand(objectMapper.valueToTree(request)));
     return ApiResponse.success(AnswerSuccessCode.ANSWER_STT_CALLBACK_PROCESSED);
   }
 }
