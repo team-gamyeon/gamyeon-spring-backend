@@ -42,11 +42,24 @@ public class ReportCallbackService implements ReportCallbackUseCase {
       //  Hibernate ClassCastException 해결: DTO 객체를 Map으로 변환하여 jsonb 저장 준비
       Map<String, Object> reportDataMap = objectMapper.convertValue(detail, Map.class);
 
-      // 3. 도메인 메서드 호출 (시그니처 일치: int, int, List, List, Object)
-      // NPE 방지를 위해 null 체크 후 기본값(0) 처리 포함
+      // 3. JSONB map에서 직접 추출 → DB 컬럼과 JSONB 값을 동일 소스로 통일
+      int totalScore =
+          reportDataMap.get("total_score") instanceof Number n
+              ? n.intValue()
+              : (detail.getTotalScore() != null ? detail.getTotalScore() : 0);
+      int answeredCount =
+          reportDataMap.get("answered_count") instanceof Number n
+              ? n.intValue()
+              : (detail.getAnsweredCount() != null ? detail.getAnsweredCount() : 0);
+
+      log.info(
+          "[Report] total_score from map={}, from dto={}",
+          reportDataMap.get("total_score"),
+          detail.getTotalScore());
+
       report.complete(
-          detail.getTotalScore() != null ? detail.getTotalScore() : 0,
-          detail.getAnsweredCount() != null ? detail.getAnsweredCount() : 0,
+          totalScore,
+          answeredCount,
           detail.getStrengths(),
           detail.getWeaknesses(),
           reportDataMap // JSONB 컬럼에 Map 형태로 저장

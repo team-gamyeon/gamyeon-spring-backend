@@ -143,10 +143,10 @@ public class ReportQueryService
       }
 
       return ReportDetailResponse.ReportDetail.builder()
-          .totalScore((Integer) data.get("total_score"))
+          .totalScore(toInteger(data.get("total_score")))
           .reportAccuracy((String) data.get("report_accuracy"))
           .jobCategory((String) data.get("job_category"))
-          .answeredCount((Integer) data.get("answered_count"))
+          .answeredCount(toInteger(data.get("answered_count")))
           .avgAnswerDurationMs(
               data.get("avg_answer_duration_ms") != null
                   ? Long.valueOf(data.get("avg_answer_duration_ms").toString())
@@ -157,9 +157,7 @@ public class ReportQueryService
                       java.time.Instant.parse((String) data.get("created_at")),
                       java.time.ZoneOffset.UTC)
                   : null)
-          .competencyScores(
-              convertCompetencyScores(
-                  (java.util.Map<String, Integer>) data.get("competency_scores")))
+          .competencyScores(convertCompetencyScores(data.get("competency_scores")))
           .strengths((List<String>) data.get("strengths"))
           .weaknesses((List<String>) data.get("weaknesses"))
           .questionSummaries(questionSummaries)
@@ -186,14 +184,19 @@ public class ReportQueryService
     return 0L; // fallback
   }
 
-  private java.util.Map<String, Integer> convertCompetencyScores(
-      java.util.Map<String, Integer> raw) {
-    if (raw == null) return null;
+  private Integer toInteger(Object value) {
+    if (value instanceof Number n) return n.intValue();
+    return null;
+  }
+
+  @SuppressWarnings("unchecked")
+  private java.util.Map<String, Integer> convertCompetencyScores(Object raw) {
+    if (!(raw instanceof java.util.Map<?, ?> map)) return null;
     java.util.Map<String, Integer> result = new java.util.LinkedHashMap<>();
-    raw.forEach(
+    map.forEach(
         (key, value) -> {
-          String camel = toCamelCase(key);
-          result.put(camel, value);
+          String camel = toCamelCase((String) key);
+          result.put(camel, toInteger(value));
         });
     return result;
   }
