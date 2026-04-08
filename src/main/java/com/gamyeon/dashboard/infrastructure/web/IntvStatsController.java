@@ -1,7 +1,6 @@
 package com.gamyeon.dashboard.infrastructure.web;
 
 import com.gamyeon.common.response.SuccessResponse;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.gamyeon.dashboard.application.port.inbound.DailyStat;
 import com.gamyeon.dashboard.application.port.inbound.IntvStatsUseCase;
 import java.time.LocalDate;
@@ -9,6 +8,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;

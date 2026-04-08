@@ -112,16 +112,13 @@ class AuthServiceTest {
         .willReturn(Optional.of(bannedUser));
 
     assertThrows(
-        UserDomainException.class,
-        () -> authService.login(command),
-        "정지된 유저 로그인 시 예외가 발생해야 합니다");
+        UserDomainException.class, () -> authService.login(command), "정지된 유저 로그인 시 예외가 발생해야 합니다");
   }
 
   @Test
   @DisplayName("TAS-004 - 탈퇴한 유저가 로그인하면 예외가 발생해야 한다")
   void shouldThrowExceptionWhenWithdrewUserLogsIn() {
-    User withdrewUser =
-        userWithStatus(1L, OAuthProvider.GOOGLE, "google-123", UserStatus.WITHDREW);
+    User withdrewUser = userWithStatus(1L, OAuthProvider.GOOGLE, "google-123", UserStatus.WITHDREW);
     OAuthLoginCommand command =
         OAuthLoginCommand.of(OAuthProvider.GOOGLE, "auth-code", "code-verifier");
 
@@ -133,9 +130,7 @@ class AuthServiceTest {
         .willReturn(Optional.of(withdrewUser));
 
     assertThrows(
-        UserDomainException.class,
-        () -> authService.login(command),
-        "탈퇴한 유저 로그인 시 예외가 발생해야 합니다");
+        UserDomainException.class, () -> authService.login(command), "탈퇴한 유저 로그인 시 예외가 발생해야 합니다");
   }
 
   // ── reissue ─────────────────────────────────────────────────────────────
@@ -228,9 +223,20 @@ class AuthServiceTest {
 
   private OAuthUserInfo mockUserInfo(String providerId, String email, String nickname) {
     return new OAuthUserInfo() {
-      @Override public String getProviderId() { return providerId; }
-      @Override public String getEmail() { return email; }
-      @Override public String getNickname() { return nickname; }
+      @Override
+      public String getProviderId() {
+        return providerId;
+      }
+
+      @Override
+      public String getEmail() {
+        return email;
+      }
+
+      @Override
+      public String getNickname() {
+        return nickname;
+      }
     };
   }
 }

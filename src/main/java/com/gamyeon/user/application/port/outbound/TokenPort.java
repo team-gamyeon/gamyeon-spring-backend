@@ -11,6 +11,4 @@ public interface TokenPort {
   boolean validateToken(String token);
 
   Long getUserId(String token);
-
-
 }

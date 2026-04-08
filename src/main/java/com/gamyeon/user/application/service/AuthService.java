@@ -41,7 +41,8 @@ public class AuthService implements AuthUseCase {
     OAuthProvider provider = command.getProvider();
     String authCode = command.getAuthorizationCode();
 
-    String oauthAccessToken = oAuthPort.getAccessToken(provider, authCode, command.getCodeVerifier());
+    String oauthAccessToken =
+        oAuthPort.getAccessToken(provider, authCode, command.getCodeVerifier());
     OAuthPort.OAuthUserInfo oAuthUserInfo = oAuthPort.getUserInfo(provider, oauthAccessToken);
 
     String email = resolveEmail(provider, oAuthUserInfo);

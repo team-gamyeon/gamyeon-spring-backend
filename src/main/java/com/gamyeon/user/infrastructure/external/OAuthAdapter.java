@@ -32,7 +32,8 @@ public class OAuthAdapter implements OAuthPort {
   }
 
   @Override
-  public String getAccessToken(OAuthProvider provider, String authorizationCode, String codeVerifier) {
+  public String getAccessToken(
+      OAuthProvider provider, String authorizationCode, String codeVerifier) {
     try {
       return switch (provider) {
         case GOOGLE -> fetchGoogleAccessToken(authorizationCode, codeVerifier);
