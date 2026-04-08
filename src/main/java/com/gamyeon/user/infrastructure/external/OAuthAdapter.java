@@ -32,11 +32,11 @@ public class OAuthAdapter implements OAuthPort {
   }
 
   @Override
-  public String getAccessToken(OAuthProvider provider, String authorizationCode) {
+  public String getAccessToken(OAuthProvider provider, String authorizationCode, String codeVerifier) {
     try {
       return switch (provider) {
-        case GOOGLE -> fetchGoogleAccessToken(authorizationCode);
-        case KAKAO -> fetchKakaoAccessToken(authorizationCode);
+        case GOOGLE -> fetchGoogleAccessToken(authorizationCode, codeVerifier);
+        case KAKAO -> fetchKakaoAccessToken(authorizationCode, codeVerifier);
       };
     } catch (WebClientResponseException e) {
       log.warn(
@@ -71,7 +71,7 @@ public class OAuthAdapter implements OAuthPort {
     }
   }
 
-  private String fetchGoogleAccessToken(String authorizationCode) {
+  private String fetchGoogleAccessToken(String authorizationCode, String codeVerifier) {
     OAuthProperties.Provider google = oAuthProperties.getGoogle();
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("code", authorizationCode);
@@ -79,6 +79,7 @@ public class OAuthAdapter implements OAuthPort {
     params.add("client_secret", google.getClientSecret());
     params.add("redirect_uri", google.getRedirectUri());
     params.add("grant_type", "authorization_code");
+    params.add("code_verifier", codeVerifier);
 
     TokenResponse response =
         webClient
@@ -103,7 +104,7 @@ public class OAuthAdapter implements OAuthPort {
         .block();
   }
 
-  private String fetchKakaoAccessToken(String authorizationCode) {
+  private String fetchKakaoAccessToken(String authorizationCode, String codeVerifier) {
     OAuthProperties.Provider kakao = oAuthProperties.getKakao();
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("code", authorizationCode);
@@ -111,6 +112,7 @@ public class OAuthAdapter implements OAuthPort {
     params.add("client_secret", kakao.getClientSecret());
     params.add("redirect_uri", kakao.getRedirectUri());
     params.add("grant_type", "authorization_code");
+    params.add("code_verifier", codeVerifier);
 
     TokenResponse response =
         webClient
