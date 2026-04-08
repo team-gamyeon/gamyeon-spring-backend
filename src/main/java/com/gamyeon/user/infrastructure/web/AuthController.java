@@ -3,7 +3,7 @@ package com.gamyeon.user.infrastructure.web;
 import com.gamyeon.common.exception.CommonErrorCode;
 import com.gamyeon.common.exception.CommonException;
 import com.gamyeon.common.response.SuccessResponse;
-import com.gamyeon.common.security.CurrentUserId;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.gamyeon.user.application.port.inbound.AuthUseCase;
 import com.gamyeon.user.application.port.inbound.LoginResult;
 import com.gamyeon.user.application.port.inbound.OAuthLoginCommand;
@@ -54,7 +54,7 @@ public class AuthController {
   }
 
   @PostMapping("/logout")
-  public ResponseEntity<SuccessResponse<Void>> logout(@CurrentUserId Long userId) {
+  public ResponseEntity<SuccessResponse<Void>> logout(@AuthenticationPrincipal Long userId) {
     log.info("Received logout request. userId={}", userId);
 
     authUseCase.logout(userId);

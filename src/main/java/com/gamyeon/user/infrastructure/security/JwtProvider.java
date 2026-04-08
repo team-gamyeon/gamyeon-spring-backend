@@ -22,17 +22,18 @@ public class JwtProvider implements TokenPort {
     this.refreshTokenExpiry = properties.getRefreshTokenExpiry();
   }
 
-  public String createAccessToken(Long userId, String email) {
+  @Override
+  public String createAccessToken(Long userId) {
     Date now = new Date();
     return Jwts.builder()
         .subject(String.valueOf(userId))
-        .claim("email", email)
         .issuedAt(now)
         .expiration(new Date(now.getTime() + accessTokenExpiry))
         .signWith(secretKey)
         .compact();
   }
 
+  @Override
   public String createRefreshToken(Long userId) {
     Date now = new Date();
     return Jwts.builder()
@@ -43,10 +44,12 @@ public class JwtProvider implements TokenPort {
         .compact();
   }
 
-  public Claims getClaims(String token) {
-    return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
+  @Override
+  public long getRefreshTokenExpiry() {
+    return refreshTokenExpiry;
   }
 
+  @Override
   public boolean validateToken(String token) {
     try {
       getClaims(token);
@@ -58,15 +61,12 @@ public class JwtProvider implements TokenPort {
     }
   }
 
+  @Override
   public Long getUserId(String token) {
     return Long.parseLong(getClaims(token).getSubject());
   }
 
-  public String getEmail(String token) {
-    return getClaims(token).get("email", String.class);
-  }
-
-  public long getRefreshTokenExpiry() {
-    return refreshTokenExpiry;
+  public Claims getClaims(String token) {
+    return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
   }
 }

@@ -109,7 +109,7 @@ public class AuthService implements AuthUseCase {
   }
 
   private LoginResult issueTokens(User user) {
-    String accessToken = tokenPort.createAccessToken(user.getId(), user.getEmail());
+    String accessToken = tokenPort.createAccessToken(user.getId());
     String refreshTokenValue = tokenPort.createRefreshToken(user.getId());
 
     RefreshToken refreshToken =

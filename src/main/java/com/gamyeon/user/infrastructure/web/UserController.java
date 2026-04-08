@@ -1,7 +1,7 @@
 package com.gamyeon.user.infrastructure.web;
 
 import com.gamyeon.common.response.SuccessResponse;
-import com.gamyeon.common.security.CurrentUserId;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.gamyeon.user.application.port.inbound.NicknameUpdateCommand;
 import com.gamyeon.user.application.port.inbound.UserInfo;
 import com.gamyeon.user.application.port.inbound.UserUseCase;
@@ -30,7 +30,7 @@ public class UserController {
   }
 
   @GetMapping("/me")
-  public ResponseEntity<SuccessResponse<UserResponse>> getMyInfo(@CurrentUserId Long userId) {
+  public ResponseEntity<SuccessResponse<UserResponse>> getMyInfo(@AuthenticationPrincipal Long userId) {
     log.info("Received getMyInfo request. userId={}", userId);
 
     UserInfo userInfo = userUseCase.getMyInfo(userId);
@@ -39,7 +39,7 @@ public class UserController {
 
   @PatchMapping("/me/nickname")
   public ResponseEntity<SuccessResponse<UserResponse>> updateNickname(
-      @CurrentUserId Long userId, @Valid @RequestBody NicknameUpdateRequest request) {
+      @AuthenticationPrincipal Long userId, @Valid @RequestBody NicknameUpdateRequest request) {
     log.info("Received updateNickname request. userId={}, nickname={}", userId, request.nickname());
 
     NicknameUpdateCommand command = NicknameUpdateCommand.of(userId, request.nickname());
@@ -49,7 +49,7 @@ public class UserController {
   }
 
   @DeleteMapping("/me")
-  public ResponseEntity<SuccessResponse<Void>> withdraw(@CurrentUserId Long userId) {
+  public ResponseEntity<SuccessResponse<Void>> withdraw(@AuthenticationPrincipal Long userId) {
     log.info("Received withdraw request. userId={}", userId);
 
     userUseCase.withdraw(userId);

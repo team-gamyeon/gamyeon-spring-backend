@@ -1,7 +1,6 @@
 package com.gamyeon.common.config;
 
 import java.util.List;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,6 +16,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 public class SecurityConfig {
 
+  private final List<SecurityFilterConfigurer> filterConfigurers;
+
+  public SecurityConfig(List<SecurityFilterConfigurer> filterConfigurers) {
+    this.filterConfigurers = filterConfigurers;
+  }
+
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
@@ -25,22 +30,19 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .authorizeHttpRequests(
             auth ->
-                auth
-                    //                        .requestMatchers("/api/v1/auth/login/**",
-                    // "/api/v1/auth/reissue").permitAll()
-                    //                        .requestMatchers("/api/internal/**").permitAll()
-                    //                        .requestMatchers("/api/v1/intvs/").permitAll()
-                    //                        .requestMatchers("/health",
-                    // "/actuator/**").permitAll()
-                    //                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                    .anyRequest()
+                auth.requestMatchers(
+                        "/api/v1/auth/login/**",
+                        "/api/v1/auth/reissue",
+                        "/api/internal/**",
+                        "/health",
+                        "/actuator/**")
                     .permitAll()
-            //                                .authenticated()
-            );
-    //                .addFilterBefore(internalApiKeyFilter(),
-    // UsernamePasswordAuthenticationFilter.class)
-    //                .addFilterBefore(jwtAuthenticationFilter(),
-    // UsernamePasswordAuthenticationFilter.class);
+                    .anyRequest()
+                    .authenticated());
+
+    for (SecurityFilterConfigurer configurer : filterConfigurers) {
+      configurer.configure(http);
+    }
 
     return http.build();
   }
@@ -48,15 +50,9 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
-    //    config.setAllowedOrigins(List.of("http://localhost:3000", "https://gamyeon.com"));
-    //    config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-    //    config.setAllowedHeaders(
-    //        List.of("Authorization", "Content-Type", "X-Requested-With", "X-Internal-API-Key"));
-
     config.setAllowedOriginPatterns(List.of("*"));
     config.setAllowedMethods(List.of("*"));
     config.setAllowedHeaders(List.of("*"));
-
     config.setAllowCredentials(true);
     config.setMaxAge(3600L);
 
