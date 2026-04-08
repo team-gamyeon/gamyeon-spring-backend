@@ -1,5 +1,6 @@
 package com.gamyeon.user.infrastructure.security;
 
+import com.gamyeon.user.application.port.outbound.TokenPort;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -9,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import javax.crypto.SecretKey;
 
-public class JwtProvider {
+public class JwtProvider implements TokenPort {
 
   private final SecretKey secretKey;
   private final long accessTokenExpiry;

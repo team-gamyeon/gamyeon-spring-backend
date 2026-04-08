@@ -1,6 +1,5 @@
-package com.gamyeon.user.infrastructure.security;
+package com.gamyeon.common.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -18,19 +17,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 public class SecurityConfig {
 
-  private final JwtProvider jwtProvider;
-  private final ObjectMapper objectMapper;
-  private final String internalApiKey;
-
-  public SecurityConfig(
-      JwtProvider jwtProvider,
-      ObjectMapper objectMapper,
-      @Value("${internal.api-key}") String internalApiKey) {
-    this.jwtProvider = jwtProvider;
-    this.objectMapper = objectMapper;
-    this.internalApiKey = internalApiKey;
-  }
-
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
@@ -40,7 +26,6 @@ public class SecurityConfig {
         .authorizeHttpRequests(
             auth ->
                 auth
-
                     //                        .requestMatchers("/api/v1/auth/login/**",
                     // "/api/v1/auth/reissue").permitAll()
                     //                        .requestMatchers("/api/internal/**").permitAll()
@@ -60,16 +45,6 @@ public class SecurityConfig {
     return http.build();
   }
 
-  //    @Bean
-  //    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-  //        return new JwtAuthenticationFilter(jwtProvider, objectMapper);
-  //    }
-  //
-  //    @Bean
-  //    public InternalApiKeyFilter internalApiKeyFilter() {
-  //        return new InternalApiKeyFilter(internalApiKey, objectMapper);
-  //    }
-
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
@@ -78,9 +53,9 @@ public class SecurityConfig {
     //    config.setAllowedHeaders(
     //        List.of("Authorization", "Content-Type", "X-Requested-With", "X-Internal-API-Key"));
 
-    config.setAllowedOriginPatterns(List.of("*")); // 추가
-    config.setAllowedMethods(List.of("*")); // 추가
-    config.setAllowedHeaders(List.of("*")); // 추가
+    config.setAllowedOriginPatterns(List.of("*"));
+    config.setAllowedMethods(List.of("*"));
+    config.setAllowedHeaders(List.of("*"));
 
     config.setAllowCredentials(true);
     config.setMaxAge(3600L);
