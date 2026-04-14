@@ -1,6 +1,7 @@
 package com.gamyeon.question.adaptor.in.web;
 
 import com.gamyeon.common.response.ApiResponse;
+import com.gamyeon.common.security.CurrentUserId;
 import com.gamyeon.question.adaptor.in.dto.response.QuestionSetResponse;
 import com.gamyeon.question.application.port.in.GetQuestionSetResult;
 import com.gamyeon.question.application.port.in.GetQuestionSetUseCase;
@@ -26,8 +27,7 @@ public class QuestionSetsController {
 
   @PostMapping("/intvs/{intvId}/questions")
   public ResponseEntity<ApiResponse<Void>> createQuestionSet(
-      Long userId, @PathVariable Long intvId) {
-    userId = 1L;
+      @CurrentUserId Long userId, @PathVariable Long intvId) {
     log.info("Received create question set request. userId={}, intvId={}", userId, intvId);
 
     requestCustomQuestionUseCase.generate(userId, intvId);
@@ -37,8 +37,7 @@ public class QuestionSetsController {
 
   @GetMapping("/intvs/{intvId}/questions")
   public ResponseEntity<ApiResponse<QuestionSetResponse>> getQuestionSet(
-      Long userId, @PathVariable Long intvId) {
-    userId = 1L;
+      @CurrentUserId Long userId, @PathVariable Long intvId) {
     log.info("Received get question set request. userId={}, intvId={}", userId, intvId);
     GetQuestionSetResult result = getQuestionSetUseCase.getQuestionSets(userId, intvId);
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.gamyeon.answer.application.port.in.SendAnswerGazeSegmentUseCase;
 import com.gamyeon.answer.domain.AnswerSuccessCode;
 import com.gamyeon.common.response.ApiResponse;
+import com.gamyeon.common.security.CurrentUserId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,9 +22,10 @@ public class AnswerGazeController {
 
   @PostMapping("/api/v1/intvs/{questionSetId}/gaze")
   public ResponseEntity<ApiResponse<Void>> sendGazeSegment(
-      Long userId, @PathVariable Long questionSetId, @RequestBody JsonNode requestBody) {
+      @CurrentUserId Long userId,
+      @PathVariable Long questionSetId,
+      @RequestBody JsonNode requestBody) {
     log.info("body: {}", requestBody.toString());
-    userId = 1L;
     sendAnswerGazeSegmentUseCase.send(
         new com.gamyeon.answer.application.port.in.SendAnswerGazeSegmentCommand(
             userId, questionSetId, requestBody));

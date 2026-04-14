@@ -1,6 +1,7 @@
 package com.gamyeon.preparation.adapter.in.web;
 
 import com.gamyeon.common.response.ApiResponse;
+import com.gamyeon.common.security.CurrentUserId;
 import com.gamyeon.preparation.application.port.in.PreparationFileUseCase;
 import com.gamyeon.preparation.application.port.in.PreparationFilesRegisterResult;
 import com.gamyeon.preparation.application.port.in.UploadPreparationFileUrlResult;
@@ -32,10 +33,9 @@ public class PreparationController {
 
   @PostMapping("/{intvId}/files")
   public ResponseEntity<ApiResponse<PreparationFileRegisterResponse>> registerFile(
-      Long userId,
+      @CurrentUserId Long userId,
       @PathVariable Long intvId,
       @Valid @RequestBody PreparationFileRegisterRequest request) {
-    userId = 1L;
     log.info(
         "Received register preparation files request. userId={}, intvId={}, fileCount={}",
         userId,
@@ -53,8 +53,9 @@ public class PreparationController {
 
   @PostMapping("/{intvId}/files/presigned-url")
   public ResponseEntity<ApiResponse<PreparationResponse>> issueUploadUrl(
-      Long userId, @PathVariable Long intvId, @Valid @RequestBody PreparationRequest request) {
-    userId = 1L;
+      @CurrentUserId Long userId,
+      @PathVariable Long intvId,
+      @Valid @RequestBody PreparationRequest request) {
     log.info(
         "Received preparation upload URL request. userId={}, intvId={}, fileType={}, originalFileName={}, fileSizeBytes={}",
         userId,

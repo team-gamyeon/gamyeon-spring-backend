@@ -8,6 +8,7 @@ import com.gamyeon.answer.application.port.in.RequestAnswerAnalysisCommand;
 import com.gamyeon.answer.application.port.in.RequestAnswerAnalysisUseCase;
 import com.gamyeon.answer.domain.AnswerSuccessCode;
 import com.gamyeon.common.response.ApiResponse;
+import com.gamyeon.common.security.CurrentUserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,10 +29,9 @@ public class AnswerController {
 
   @PostMapping("/api/v1/intvs/{questionSetId}/answers/presigned-url")
   public ResponseEntity<ApiResponse<AnswerUploadUrlResponse>> issueUploadUrl(
-      Long userId,
+      @CurrentUserId Long userId,
       @PathVariable Long questionSetId,
       @Valid @RequestBody IssueAnswerUploadUrlRequest request) {
-    userId = 1L;
     log.info(
         "Received issueUploadUrl request. userId={}, questionSetId={}, originalFileName={}, contentType={}, fileSizeBytes={}",
         userId,
@@ -49,10 +49,9 @@ public class AnswerController {
 
   @PostMapping("/api/v1/intvs/{questionSetId}/answers")
   public ResponseEntity<ApiResponse<RegisterAnswerResponse>> registerAnswer(
-      Long userId,
+      @CurrentUserId Long userId,
       @PathVariable Long questionSetId,
       @Valid @RequestBody RegisterAnswerRequest request) {
-    userId = 1L;
     log.info(
         "Received registerAnswer request. userId={}, intvId={}, questionSetId={}, originalFileName={}, fileKey={}",
         userId,
@@ -70,8 +69,7 @@ public class AnswerController {
 
   @PostMapping("/api/v1/answers/{answerId}/analysis")
   public ResponseEntity<ApiResponse<Void>> requestAnalysis(
-      Long userId, @PathVariable Long answerId) {
-    userId = 1L;
+      @CurrentUserId Long userId, @PathVariable Long answerId) {
     log.info("Received requestAnalysis request. userId={}, answerId={}", userId, answerId);
 
     requestAnswerAnalysisUseCase.requestAnalysis(

@@ -1,6 +1,7 @@
 package com.gamyeon.intv.presentation;
 
 import com.gamyeon.common.response.ApiResponse;
+import com.gamyeon.common.security.CurrentUserId;
 import com.gamyeon.intv.application.dto.command.ChangeStateIntvCommand;
 import com.gamyeon.intv.application.dto.command.UpdateIntvCommand;
 import com.gamyeon.intv.application.dto.result.FinishedIntvDailyCountInfo;
@@ -51,8 +52,7 @@ public class IntvController {
 
   @PostMapping
   public ResponseEntity<ApiResponse<IntvResponse>> create(
-      Long userId, @Valid @RequestBody IntvRequest request) {
-    userId = 1L;
+      @CurrentUserId Long userId, @Valid @RequestBody IntvRequest request) {
     log.info("Received create intv request. userId={}, title={}", userId, request.title());
     IntvInfo info = createUseCase.create(request.toCreateCommand(userId));
 
@@ -61,8 +61,9 @@ public class IntvController {
 
   @PatchMapping("/{intvId}")
   public ResponseEntity<ApiResponse<IntvResponse>> update(
-      Long userId, @PathVariable Long intvId, @Valid @RequestBody IntvRequest request) {
-    userId = 1L;
+      @CurrentUserId Long userId,
+      @PathVariable Long intvId,
+      @Valid @RequestBody IntvRequest request) {
     log.info(
         "Received update intv request. userId={}, intvId={}, title={}",
         userId,
@@ -76,8 +77,8 @@ public class IntvController {
   }
 
   @PatchMapping("/{intvId}/start")
-  public ResponseEntity<ApiResponse<Void>> start(Long userId, @PathVariable Long intvId) {
-    userId = 1L;
+  public ResponseEntity<ApiResponse<Void>> start(
+      @CurrentUserId Long userId, @PathVariable Long intvId) {
     log.info("Received start intv request. userId={}, intvId={}", userId, intvId);
     changeStateUseCase.start(new ChangeStateIntvCommand(userId, intvId));
 
@@ -85,8 +86,8 @@ public class IntvController {
   }
 
   @PatchMapping("/{intvId}/pause")
-  public ResponseEntity<ApiResponse<Void>> pauseIntv(Long userId, @PathVariable Long intvId) {
-    userId = 1L;
+  public ResponseEntity<ApiResponse<Void>> pauseIntv(
+      @CurrentUserId Long userId, @PathVariable Long intvId) {
     log.info("Received pause intv request. userId={}, intvId={}", userId, intvId);
     changeStateUseCase.pause(new ChangeStateIntvCommand(userId, intvId));
 
@@ -94,8 +95,8 @@ public class IntvController {
   }
 
   @PatchMapping("/{intvId}/resume")
-  public ResponseEntity<ApiResponse<Void>> resumeIntv(Long userId, @PathVariable Long intvId) {
-    userId = 1L;
+  public ResponseEntity<ApiResponse<Void>> resumeIntv(
+      @CurrentUserId Long userId, @PathVariable Long intvId) {
     log.info("Received resume intv request. userId={}, intvId={}", userId, intvId);
     changeStateUseCase.resume(new ChangeStateIntvCommand(userId, intvId));
 
@@ -103,8 +104,8 @@ public class IntvController {
   }
 
   @PatchMapping("/{intvId}/finish")
-  public ResponseEntity<ApiResponse<Void>> finishIntv(Long userId, @PathVariable Long intvId) {
-    userId = 1L;
+  public ResponseEntity<ApiResponse<Void>> finishIntv(
+      @CurrentUserId Long userId, @PathVariable Long intvId) {
     log.info("Received finish intv request. userId={}, intvId={}", userId, intvId);
     changeStateUseCase.finish(new ChangeStateIntvCommand(userId, intvId));
 
@@ -113,10 +114,9 @@ public class IntvController {
 
   @GetMapping("/stats")
   public ResponseEntity<ApiResponse<List<FinishedIntvDailyCountResponse>>> getFinishedIntvStats(
-      Long userId,
+      @CurrentUserId Long userId,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-    userId = 1L;
     log.info(
         "Received finished intv stats request. userId={}, startDate={}, endDate={}",
         userId,
