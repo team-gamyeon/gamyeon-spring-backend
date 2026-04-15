@@ -1,11 +1,19 @@
 name: CI/CD Pipeline
 
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'chore/cicd'
+  pull_request:
+
 jobs:
-  # ── Lint ──────────────────
+  # ── Lint  ──────────────────────────────────────
   lint:
     name: Lint (Spotless)
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop'
+    if: github.event_name == 'pull_request'
 
     steps:
       - name: 코드 체크아웃
@@ -33,11 +41,11 @@ jobs:
       - name: Spotless 검사
         run: ./gradlew spotlessCheck --no-daemon
 
-  # ── Test ──────────────────
+  # ── Test  ──────────────────────────────────────
   test:
     name: Test
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop'
+    if: github.event_name == 'pull_request'
 
     steps:
       - name: 코드 체크아웃
@@ -73,11 +81,11 @@ jobs:
           path: build/reports/tests/test/
           retention-days: 7
 
-  # ── Deploy ─────────────────
+  # ── Deploy ─────────────
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    if: github.event_name == 'push'
 
     steps:
       - name: EC2에서 빌드 + 배포
