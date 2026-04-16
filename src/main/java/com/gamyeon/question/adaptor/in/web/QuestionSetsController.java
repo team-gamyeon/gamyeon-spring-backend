@@ -1,7 +1,6 @@
 package com.gamyeon.question.adaptor.in.web;
 
 import com.gamyeon.common.response.ApiResponse;
-import com.gamyeon.common.security.CurrentUserId;
 import com.gamyeon.question.adaptor.in.dto.response.QuestionSetResponse;
 import com.gamyeon.question.application.port.in.GetQuestionSetResult;
 import com.gamyeon.question.application.port.in.GetQuestionSetUseCase;
@@ -10,6 +9,7 @@ import com.gamyeon.question.domain.QuestionSuccessCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +27,7 @@ public class QuestionSetsController {
 
   @PostMapping("/intvs/{intvId}/questions")
   public ResponseEntity<ApiResponse<Void>> createQuestionSet(
-      @CurrentUserId Long userId, @PathVariable Long intvId) {
+      @AuthenticationPrincipal Long userId, @PathVariable Long intvId) {
     log.info("Received create question set request. userId={}, intvId={}", userId, intvId);
 
     requestCustomQuestionUseCase.generate(userId, intvId);
@@ -37,7 +37,7 @@ public class QuestionSetsController {
 
   @GetMapping("/intvs/{intvId}/questions")
   public ResponseEntity<ApiResponse<QuestionSetResponse>> getQuestionSet(
-      @CurrentUserId Long userId, @PathVariable Long intvId) {
+      @AuthenticationPrincipal Long userId, @PathVariable Long intvId) {
     log.info("Received get question set request. userId={}, intvId={}", userId, intvId);
     GetQuestionSetResult result = getQuestionSetUseCase.getQuestionSets(userId, intvId);
 
