@@ -36,7 +36,8 @@ public class AuthController {
     log.info("Received login request. provider={}", provider);
 
     OAuthProvider oAuthProvider = parseProvider(provider);
-    OAuthLoginCommand command = OAuthLoginCommand.of(oAuthProvider, request.authorizationCode());
+    OAuthLoginCommand command =
+        OAuthLoginCommand.of(oAuthProvider, request.authorizationCode(), request.codeVerifier());
     LoginResult result = authUseCase.login(command);
     return ResponseEntity.ok(
         SuccessResponse.of(UserSuccessCode.USER_LOGIN, LoginResponse.from(result)));
@@ -68,7 +69,7 @@ public class AuthController {
     };
   }
 
-  public record LoginRequest(@NotBlank String authorizationCode) {}
+  public record LoginRequest(@NotBlank String authorizationCode, @NotBlank String codeVerifier) {}
 
   public record ReissueRequest(@NotBlank String refreshToken) {}
 
