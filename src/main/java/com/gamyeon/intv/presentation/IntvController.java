@@ -2,7 +2,6 @@ package com.gamyeon.intv.presentation;
 
 import com.gamyeon.common.response.ApiResponse;
 import com.gamyeon.intv.application.dto.command.ChangeStateIntvCommand;
-import com.gamyeon.intv.application.dto.command.UpdateIntvCommand;
 import com.gamyeon.intv.application.dto.result.FinishedIntvDailyCountInfo;
 import com.gamyeon.intv.application.dto.result.IntvInfo;
 import com.gamyeon.intv.application.usecase.ChangeStateUseCase;
@@ -70,8 +69,6 @@ public class IntvController {
         intvId,
         request.title());
     IntvInfo info = updateTitleUseCase.updateTitle(request.toUpdateCommand(userId, intvId));
-
-    updateTitleUseCase.updateTitle(new UpdateIntvCommand(userId, intvId, request.title()));
 
     return ApiResponse.success(IntvSuccessCode.INTV_UPDATED, IntvResponse.from(info));
   }
