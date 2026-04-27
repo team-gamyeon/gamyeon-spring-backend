@@ -1,6 +1,15 @@
 package com.gamyeon.answer.application;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+@Getter
+@Setter
 @ConfigurationProperties(prefix = "answer.analysis")
-public record AnswerAnalysisProperties(String baseUrl) {}
+public class AnswerAnalysisProperties {
+
+  private int dispatchBatchSize = 10;
+  private int maxRetryCount = 5;
+  private long schedulerFixedDelayMs = 60_000L;
+}
