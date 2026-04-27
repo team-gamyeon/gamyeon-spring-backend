@@ -27,11 +27,11 @@ public class JwtSecurityFilterConfigurer implements SecurityFilterConfigurer {
   @Override
   public void configure(HttpSecurity http) throws Exception {
     http
-//        .addFilterBefore(
-//            new InternalApiKeyFilter(internalApiKey, objectMapper),
-//            UsernamePasswordAuthenticationFilter.class)
+        //        .addFilterBefore(
+        //            new InternalApiKeyFilter(internalApiKey, objectMapper),
+        //            UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(
-            new JwtAuthenticationFilter(tokenPort, objectMapper),
-            UsernamePasswordAuthenticationFilter.class);
+        new JwtAuthenticationFilter(tokenPort, objectMapper),
+        UsernamePasswordAuthenticationFilter.class);
   }
 }
