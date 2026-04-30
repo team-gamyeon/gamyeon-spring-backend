@@ -17,6 +17,14 @@ public class AnswerAnalysisScheduler {
 
   @Scheduled(fixedDelayString = "${answer.analysis.scheduler-fixed-delay-ms:60000}")
   public void dispatchPendingJobs() {
+    int recoveredCount =
+        answerAnalysisDispatchService.recoverStaleSendingJobs(
+            answerAnalysisProperties.getDispatchBatchSize(),
+            answerAnalysisProperties.getSendingRecoveryTimeoutMs());
+    if (recoveredCount > 0) {
+      log.warn("Recovered {} stale SENDING STT analysis jobs.", recoveredCount);
+    }
+
     int dispatchedCount =
         answerAnalysisDispatchService.dispatchPendingJobs(
             answerAnalysisProperties.getDispatchBatchSize());

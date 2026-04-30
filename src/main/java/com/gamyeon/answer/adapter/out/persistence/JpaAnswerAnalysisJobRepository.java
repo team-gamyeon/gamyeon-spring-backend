@@ -39,4 +39,18 @@ public interface JpaAnswerAnalysisJobRepository extends JpaRepository<AnswerAnal
       @Param("retryWaitingStatus") AnswerAnalysisJobStatus retryWaitingStatus,
       @Param("now") LocalDateTime now,
       Pageable pageable);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      """
+      select job
+      from AnswerAnalysisJob job
+      where job.status = :sendingStatus
+        and job.lastAttemptAt <= :staleBefore
+      order by job.lastAttemptAt asc
+      """)
+  List<AnswerAnalysisJob> findStaleSendingJobs(
+      @Param("sendingStatus") AnswerAnalysisJobStatus sendingStatus,
+      @Param("staleBefore") LocalDateTime staleBefore,
+      Pageable pageable);
 }

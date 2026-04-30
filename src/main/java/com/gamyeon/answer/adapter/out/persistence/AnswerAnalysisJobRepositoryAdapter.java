@@ -56,6 +56,14 @@ public class AnswerAnalysisJobRepositoryAdapter implements AnswerAnalysisJobRepo
   }
 
   @Override
+  public Optional<AnswerAnalysisJob> findNextStaleSendingJob(LocalDateTime staleBefore) {
+    return jpaAnswerAnalysisJobRepository
+        .findStaleSendingJobs(AnswerAnalysisJobStatus.SENDING, staleBefore, PageRequest.of(0, 1))
+        .stream()
+        .findFirst();
+  }
+
+  @Override
   public boolean existsActiveJobByAnswerId(Long answerId) {
     return jpaAnswerAnalysisJobRepository.existsByAnswerIdAndStatusIn(answerId, ACTIVE_STATUSES);
   }

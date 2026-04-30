@@ -15,5 +15,7 @@ public interface AnswerAnalysisJobRepository {
 
   Optional<AnswerAnalysisJob> findNextDispatchCandidate(LocalDateTime now);
 
+  Optional<AnswerAnalysisJob> findNextStaleSendingJob(LocalDateTime staleBefore);
+
   boolean existsActiveJobByAnswerId(Long answerId);
 }

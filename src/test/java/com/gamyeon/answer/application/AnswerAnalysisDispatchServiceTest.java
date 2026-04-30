@@ -45,12 +45,11 @@ class AnswerAnalysisDispatchServiceTest {
 
   @BeforeEach
   void setUp() {
+    AnswerAnalysisDispatchTransactionService transactionService =
+        new AnswerAnalysisDispatchTransactionService(
+            answerRepository, answerAnalysisJobRepository, loadQuestionSetPort);
     answerAnalysisDispatchService =
-        new AnswerAnalysisDispatchService(
-            answerRepository,
-            answerAnalysisJobRepository,
-            loadQuestionSetPort,
-            requestAnswerSttAnalysisPort);
+        new AnswerAnalysisDispatchService(transactionService, requestAnswerSttAnalysisPort);
   }
 
   @Test
@@ -141,6 +140,31 @@ class AnswerAnalysisDispatchServiceTest {
     assertEquals(AnswerAnalysisJobStatus.FAILED, job.getStatus());
     assertEquals(AnswerStatus.STT_FAILED, answer.getStatus());
     assertNotNull(answer.getErrorMessage());
+  }
+
+  @Test
+  @DisplayName("ADS-004 - 오래된 SENDING job은 retry waiting으로 복구해야 한다")
+  void shouldRecoverStaleSendingJobAsRetryWaiting() {
+    Answer answer = answer(1L, 10L, 100L);
+    AnswerAnalysisJob job = answerAnalysisJob(11L, 1L, "req-1");
+    job.markSending(LocalDateTime.now().minusMinutes(10));
+
+    given(answerAnalysisJobRepository.findNextStaleSendingJob(any(LocalDateTime.class)))
+        .willReturn(Optional.of(job))
+        .willReturn(Optional.empty());
+    given(answerRepository.findById(1L)).willReturn(Optional.of(answer));
+    given(answerAnalysisJobRepository.save(any(AnswerAnalysisJob.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+    given(answerRepository.save(any(Answer.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+
+    int recoveredCount = answerAnalysisDispatchService.recoverStaleSendingJobs(1, 300_000L);
+
+    assertEquals(1, recoveredCount);
+    assertEquals(AnswerAnalysisJobStatus.RETRY_WAITING, job.getStatus());
+    assertEquals(1, job.getRetryCount());
+    assertNotNull(job.getNextRetryAt());
+    assertEquals(AnswerStatus.STT_PENDING, answer.getStatus());
   }
 
   private Answer answer(Long answerId, Long intvId, Long questionSetId) {
