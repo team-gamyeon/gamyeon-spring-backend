@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record FeedbackWebhookRequest(
+    @JsonProperty("request_id") String requestId,
     @NotNull @JsonProperty("intv_question_id") Long intvQuestionId, // = question_set_id
     @NotNull String status,
 
