@@ -27,7 +27,7 @@ public class FeedbackWebhookController {
         request.intvQuestionId(),
         request.status());
 
-    feedbackWebhookUseCase.handleWebhook(request);
+    feedbackWebhookUseCase.handleWebhook(request.toCommand());
 
     return ResponseEntity.ok(ApiResponse.success("FDBK-S000", "success"));
   }

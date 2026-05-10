@@ -4,11 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamyeon.feedback.application.FeedbackCallbackProperties;
 import com.gamyeon.feedback.application.exception.FeedbackSerializationException;
+import com.gamyeon.feedback.application.port.in.FeedbackWebhookCommand;
 import com.gamyeon.feedback.application.port.in.FeedbackWebhookUseCase;
 import com.gamyeon.feedback.domain.FeedbackCallbackJob;
 import com.gamyeon.feedback.domain.FeedbackCallbackJobRepository;
 import com.gamyeon.feedback.domain.FeedbackCallbackJobStatus;
-import com.gamyeon.feedback.infrastructure.web.dto.FeedbackWebhookRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -24,10 +24,10 @@ public class FeedbackWebhookService implements FeedbackWebhookUseCase {
   private final ObjectMapper objectMapper;
 
   @Override
-  public void handleWebhook(FeedbackWebhookRequest request) {
-    Long questionSetId = request.intvQuestionId();
-    String requestId = normalize(request.requestId());
-    String rawPayload = serialize(request);
+  public void handleWebhook(FeedbackWebhookCommand command) {
+    Long questionSetId = command.intvQuestionId();
+    String requestId = normalize(command.requestId());
+    String rawPayload = serialize(command);
 
     if (requestId != null
         && feedbackCallbackJobRepository
@@ -63,7 +63,7 @@ public class FeedbackWebhookService implements FeedbackWebhookUseCase {
     }
   }
 
-  private String serialize(FeedbackWebhookRequest request) {
+  private String serialize(FeedbackWebhookCommand request) {
     try {
       return objectMapper.writeValueAsString(request);
     } catch (JsonProcessingException e) {

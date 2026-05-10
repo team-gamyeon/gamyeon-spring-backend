@@ -3,14 +3,14 @@ package com.gamyeon.feedback.application.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamyeon.feedback.application.exception.QuestionSetNotFoundException;
+import com.gamyeon.feedback.application.port.in.FeedbackWebhookCommand;
+import com.gamyeon.feedback.application.port.out.LoadQuestionSetPort;
+import com.gamyeon.feedback.application.port.out.SaveFeedbackPort;
 import com.gamyeon.feedback.domain.Feedback;
 import com.gamyeon.feedback.domain.FeedbackCallbackJob;
 import com.gamyeon.feedback.domain.FeedbackCallbackJobRepository;
 import com.gamyeon.feedback.domain.FeedbackStatus;
 import com.gamyeon.feedback.domain.event.FeedbackSavedEvent;
-import com.gamyeon.feedback.infrastructure.persistence.FeedbackPersistenceAdapter;
-import com.gamyeon.feedback.infrastructure.persistence.QuestionSetRepository;
-import com.gamyeon.feedback.infrastructure.web.dto.FeedbackWebhookRequest;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -30,8 +30,8 @@ public class FeedbackCallbackProcessingTransactionService {
   private static final long[] RETRY_DELAY_MINUTES = {1, 3, 10, 30, 60};
 
   private final FeedbackCallbackJobRepository feedbackCallbackJobRepository;
-  private final FeedbackPersistenceAdapter feedbackPersistenceAdapter;
-  private final QuestionSetRepository questionSetRepository;
+  private final SaveFeedbackPort saveFeedbackPort;
+  private final LoadQuestionSetPort loadQuestionSetPort;
   private final ObjectMapper objectMapper;
   private final ApplicationEventPublisher eventPublisher;
 
@@ -94,14 +94,14 @@ public class FeedbackCallbackProcessingTransactionService {
   }
 
   private void process(FeedbackCallbackJob job) {
-    FeedbackWebhookRequest request = deserialize(job.getRawPayload());
+    FeedbackWebhookCommand request = deserialize(job.getRawPayload());
     Long questionSetId = request.intvQuestionId();
     Long intvId =
-        questionSetRepository
+        loadQuestionSetPort
             .findIntvIdById(questionSetId)
             .orElseThrow(() -> new QuestionSetNotFoundException(questionSetId));
 
-    if (feedbackPersistenceAdapter.existsByQuestionSetId(questionSetId)) {
+    if (saveFeedbackPort.existsByQuestionSetId(questionSetId)) {
       job.markProcessed(intvId);
       feedbackCallbackJobRepository.save(job);
       log.info(
@@ -114,7 +114,7 @@ public class FeedbackCallbackProcessingTransactionService {
     FeedbackStatus finalStatus = FeedbackStatus.fromWebhook(request.status());
     Feedback feedback =
         Feedback.createCompleted(intvId, questionSetId, finalStatus, job.getRawPayload());
-    boolean saved = feedbackPersistenceAdapter.saveIfAbsent(feedback);
+    boolean saved = saveFeedbackPort.saveIfAbsent(feedback);
 
     job.markProcessed(intvId);
     feedbackCallbackJobRepository.save(job);
@@ -165,23 +165,17 @@ public class FeedbackCallbackProcessingTransactionService {
         exception);
   }
 
-  private FeedbackWebhookRequest deserialize(String rawPayload) {
+  private FeedbackWebhookCommand deserialize(String rawPayload) {
     try {
-      return objectMapper.readValue(rawPayload, FeedbackWebhookRequest.class);
+      return objectMapper.readValue(rawPayload, FeedbackWebhookCommand.class);
     } catch (JsonProcessingException e) {
       throw new IllegalArgumentException("Feedback callback payload 역직렬화 실패", e);
     }
   }
 
   private boolean isRetryable(Exception exception) {
-    if (exception instanceof QuestionSetNotFoundException
-        || exception instanceof IllegalArgumentException) {
-      return false;
-    }
-
     return exception instanceof CannotAcquireLockException
-        || exception instanceof PessimisticLockingFailureException
-        || exception instanceof RuntimeException;
+        || exception instanceof PessimisticLockingFailureException;
   }
 
   private LocalDateTime calculateNextRetryAt(int retryCount) {

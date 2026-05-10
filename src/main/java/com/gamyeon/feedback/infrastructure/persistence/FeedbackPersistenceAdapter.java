@@ -2,6 +2,7 @@ package com.gamyeon.feedback.infrastructure.persistence;
 
 import com.gamyeon.feedback.domain.Feedback;
 import com.gamyeon.feedback.domain.FeedbackStatus;
+import com.gamyeon.feedback.application.port.out.SaveFeedbackPort;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class FeedbackPersistenceAdapter {
+public class FeedbackPersistenceAdapter implements SaveFeedbackPort {
 
   private final FeedbackJpaRepository jpaRepository;
 
@@ -28,6 +29,7 @@ public class FeedbackPersistenceAdapter {
     jpaRepository.save(updated);
   }
 
+  @Override
   public boolean saveIfAbsent(Feedback domain) {
     if (jpaRepository.existsByQuestionSetId(domain.getQuestionSetId())) {
       return false;
@@ -51,6 +53,7 @@ public class FeedbackPersistenceAdapter {
         questionSetId, List.of(FeedbackStatus.SUCCEED, FeedbackStatus.FAILED));
   }
 
+  @Override
   public boolean existsByQuestionSetId(Long questionSetId) {
     return jpaRepository.existsByQuestionSetId(questionSetId);
   }
