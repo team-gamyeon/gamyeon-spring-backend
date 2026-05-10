@@ -9,15 +9,15 @@ import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gamyeon.feedback.application.port.in.FeedbackWebhookCommand;
+import com.gamyeon.feedback.application.port.out.LoadQuestionSetPort;
+import com.gamyeon.feedback.application.port.out.SaveFeedbackPort;
 import com.gamyeon.feedback.domain.Feedback;
 import com.gamyeon.feedback.domain.FeedbackCallbackJob;
 import com.gamyeon.feedback.domain.FeedbackCallbackJobRepository;
 import com.gamyeon.feedback.domain.FeedbackCallbackJobStatus;
 import com.gamyeon.feedback.domain.FeedbackStatus;
 import com.gamyeon.feedback.domain.event.FeedbackSavedEvent;
-import com.gamyeon.feedback.infrastructure.persistence.FeedbackPersistenceAdapter;
-import com.gamyeon.feedback.infrastructure.persistence.QuestionSetRepository;
-import com.gamyeon.feedback.infrastructure.web.dto.FeedbackWebhookRequest;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +29,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @DisplayName("피드백 callback processing transaction 서비스")
@@ -36,8 +37,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 class FeedbackCallbackProcessingTransactionServiceTest {
 
   @Mock private FeedbackCallbackJobRepository feedbackCallbackJobRepository;
-  @Mock private FeedbackPersistenceAdapter feedbackPersistenceAdapter;
-  @Mock private QuestionSetRepository questionSetRepository;
+  @Mock private SaveFeedbackPort saveFeedbackPort;
+  @Mock private LoadQuestionSetPort loadQuestionSetPort;
   @Mock private ApplicationEventPublisher eventPublisher;
 
   private ObjectMapper objectMapper;
@@ -49,8 +50,8 @@ class FeedbackCallbackProcessingTransactionServiceTest {
     service =
         new FeedbackCallbackProcessingTransactionService(
             feedbackCallbackJobRepository,
-            feedbackPersistenceAdapter,
-            questionSetRepository,
+            saveFeedbackPort,
+            loadQuestionSetPort,
             objectMapper,
             eventPublisher);
   }
@@ -64,9 +65,9 @@ class FeedbackCallbackProcessingTransactionServiceTest {
         .willReturn(Optional.of(job));
     given(feedbackCallbackJobRepository.save(any(FeedbackCallbackJob.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
-    given(questionSetRepository.findIntvIdById(100L)).willReturn(Optional.of(10L));
-    given(feedbackPersistenceAdapter.existsByQuestionSetId(100L)).willReturn(false);
-    given(feedbackPersistenceAdapter.saveIfAbsent(any(Feedback.class))).willReturn(true);
+    given(loadQuestionSetPort.findIntvIdById(100L)).willReturn(Optional.of(10L));
+    given(saveFeedbackPort.existsByQuestionSetId(100L)).willReturn(false);
+    given(saveFeedbackPort.saveIfAbsent(any(Feedback.class))).willReturn(true);
 
     boolean processed = service.processNextJob();
 
@@ -74,7 +75,7 @@ class FeedbackCallbackProcessingTransactionServiceTest {
     assertEquals(FeedbackCallbackJobStatus.PROCESSED, job.getStatus());
     assertEquals(10L, job.getIntvId());
     assertNotNull(job.getProcessedAt());
-    verify(feedbackPersistenceAdapter).saveIfAbsent(any(Feedback.class));
+    verify(saveFeedbackPort).saveIfAbsent(any(Feedback.class));
 
     ArgumentCaptor<FeedbackSavedEvent> eventCaptor =
         ArgumentCaptor.forClass(FeedbackSavedEvent.class);
@@ -93,14 +94,14 @@ class FeedbackCallbackProcessingTransactionServiceTest {
         .willReturn(Optional.of(job));
     given(feedbackCallbackJobRepository.save(any(FeedbackCallbackJob.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
-    given(questionSetRepository.findIntvIdById(100L)).willReturn(Optional.of(10L));
-    given(feedbackPersistenceAdapter.existsByQuestionSetId(100L)).willReturn(true);
+    given(loadQuestionSetPort.findIntvIdById(100L)).willReturn(Optional.of(10L));
+    given(saveFeedbackPort.existsByQuestionSetId(100L)).willReturn(true);
 
     boolean processed = service.processNextJob();
 
     assertEquals(true, processed);
     assertEquals(FeedbackCallbackJobStatus.PROCESSED, job.getStatus());
-    verify(feedbackPersistenceAdapter, never()).saveIfAbsent(any(Feedback.class));
+    verify(saveFeedbackPort, never()).saveIfAbsent(any(Feedback.class));
     verify(eventPublisher, never()).publishEvent(any());
   }
 
@@ -113,7 +114,7 @@ class FeedbackCallbackProcessingTransactionServiceTest {
         .willReturn(Optional.of(job));
     given(feedbackCallbackJobRepository.save(any(FeedbackCallbackJob.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
-    given(questionSetRepository.findIntvIdById(100L)).willReturn(Optional.empty());
+    given(loadQuestionSetPort.findIntvIdById(100L)).willReturn(Optional.empty());
 
     boolean processed = service.processNextJob();
 
@@ -142,6 +143,49 @@ class FeedbackCallbackProcessingTransactionServiceTest {
     assertNotNull(job.getNextRetryAt());
   }
 
+  @Test
+  @DisplayName("FCP-005 - 일반 RuntimeException은 재시도하지 않고 FAILED 처리해야 한다")
+  void shouldFailPermanentlyWhenUnexpectedRuntimeExceptionOccurs() throws Exception {
+    FeedbackCallbackJob job = callbackJob(1L, 100L, "req-1", "SUCCEED");
+
+    given(feedbackCallbackJobRepository.findNextProcessingCandidate(any(LocalDateTime.class)))
+        .willReturn(Optional.of(job));
+    given(feedbackCallbackJobRepository.save(any(FeedbackCallbackJob.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+    given(loadQuestionSetPort.findIntvIdById(100L)).willReturn(Optional.of(10L));
+    given(saveFeedbackPort.existsByQuestionSetId(100L))
+        .willThrow(new RuntimeException("unexpected bug"));
+
+    boolean processed = service.processNextJob();
+
+    assertEquals(true, processed);
+    assertEquals(FeedbackCallbackJobStatus.FAILED, job.getStatus());
+    assertEquals(1, job.getRetryCount());
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  @DisplayName("FCP-006 - 락 획득 실패는 RETRY_WAITING으로 재시도 예약해야 한다")
+  void shouldScheduleRetryWhenLockFailureOccurs() throws Exception {
+    FeedbackCallbackJob job = callbackJob(1L, 100L, "req-1", "SUCCEED");
+
+    given(feedbackCallbackJobRepository.findNextProcessingCandidate(any(LocalDateTime.class)))
+        .willReturn(Optional.of(job));
+    given(feedbackCallbackJobRepository.save(any(FeedbackCallbackJob.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+    given(loadQuestionSetPort.findIntvIdById(100L)).willReturn(Optional.of(10L));
+    given(saveFeedbackPort.existsByQuestionSetId(100L))
+        .willThrow(new CannotAcquireLockException("temporary lock failure"));
+
+    boolean processed = service.processNextJob();
+
+    assertEquals(true, processed);
+    assertEquals(FeedbackCallbackJobStatus.RETRY_WAITING, job.getStatus());
+    assertEquals(1, job.getRetryCount());
+    assertNotNull(job.getNextRetryAt());
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
   private FeedbackCallbackJob callbackJob(
       Long jobId, Long questionSetId, String requestId, String status)
       throws JsonProcessingException {
@@ -155,8 +199,8 @@ class FeedbackCallbackProcessingTransactionServiceTest {
     return job;
   }
 
-  private FeedbackWebhookRequest request(String requestId, Long questionSetId, String status) {
-    return new FeedbackWebhookRequest(
+  private FeedbackWebhookCommand request(String requestId, Long questionSetId, String status) {
+    return new FeedbackWebhookCommand(
         requestId,
         questionSetId,
         status,

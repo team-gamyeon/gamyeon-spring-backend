@@ -7,10 +7,10 @@ import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamyeon.feedback.application.FeedbackCallbackProperties;
+import com.gamyeon.feedback.application.port.in.FeedbackWebhookCommand;
 import com.gamyeon.feedback.domain.FeedbackCallbackJob;
 import com.gamyeon.feedback.domain.FeedbackCallbackJobRepository;
 import com.gamyeon.feedback.domain.FeedbackCallbackJobStatus;
-import com.gamyeon.feedback.infrastructure.web.dto.FeedbackWebhookRequest;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +42,7 @@ class FeedbackWebhookServiceTest {
   @Test
   @DisplayName("FWH-001 - 신규 callback은 RECEIVED job으로 접수해야 한다")
   void shouldCreateReceivedJobWhenNewCallbackArrives() {
-    FeedbackWebhookRequest request = request("req-1", 100L, "SUCCEED");
+    FeedbackWebhookCommand request = request("req-1", 100L, "SUCCEED");
 
     given(feedbackCallbackJobRepository.findByRequestId("req-1")).willReturn(Optional.empty());
     given(feedbackCallbackJobRepository.findByQuestionSetId(100L)).willReturn(Optional.empty());
@@ -85,7 +85,7 @@ class FeedbackWebhookServiceTest {
   @Test
   @DisplayName("FWH-003 - 동시 중복 insert 충돌은 중복 callback으로 흡수해야 한다")
   void shouldIgnoreConcurrentDuplicateInsertConflict() {
-    FeedbackWebhookRequest request = request("req-1", 100L, "SUCCEED");
+    FeedbackWebhookCommand request = request("req-1", 100L, "SUCCEED");
 
     given(feedbackCallbackJobRepository.findByRequestId("req-1")).willReturn(Optional.empty());
     given(feedbackCallbackJobRepository.findByQuestionSetId(100L)).willReturn(Optional.empty());
@@ -97,8 +97,8 @@ class FeedbackWebhookServiceTest {
     verify(feedbackCallbackJobRepository).save(any(FeedbackCallbackJob.class));
   }
 
-  private FeedbackWebhookRequest request(String requestId, Long questionSetId, String status) {
-    return new FeedbackWebhookRequest(
+  private FeedbackWebhookCommand request(String requestId, Long questionSetId, String status) {
+    return new FeedbackWebhookCommand(
         requestId,
         questionSetId,
         status,
