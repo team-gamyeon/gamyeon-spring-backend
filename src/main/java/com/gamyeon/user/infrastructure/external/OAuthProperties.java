@@ -2,6 +2,9 @@ package com.gamyeon.user.infrastructure.external;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @ConfigurationProperties(prefix = "oauth")
 public class OAuthProperties {
 
@@ -27,7 +30,7 @@ public class OAuthProperties {
   public static class Provider {
     private String clientId;
     private String clientSecret;
-    private String redirectUri;
+    private List<String> redirectUris = new ArrayList<>();
 
     public String getClientId() {
       return clientId;
@@ -45,12 +48,20 @@ public class OAuthProperties {
       this.clientSecret = clientSecret;
     }
 
-    public String getRedirectUri() {
-      return redirectUri;
+    public List<String> getRedirectUris() {
+      return redirectUris;
     }
 
-    public void setRedirectUri(String redirectUri) {
-      this.redirectUri = redirectUri;
+    public void setRedirectUris(List<String> redirectUris) {
+      this.redirectUris = redirectUris;
+    }
+
+    public String resolveRedirectUri(String origin) {
+      if (origin == null) return redirectUris.isEmpty() ? null : redirectUris.get(0);
+      return redirectUris.stream()
+          .filter(uri -> uri.startsWith(origin))
+          .findFirst()
+          .orElse(redirectUris.isEmpty() ? null : redirectUris.get(0));
     }
   }
 }

@@ -33,11 +33,11 @@ public class OAuthAdapter implements OAuthPort {
 
   @Override
   public String getAccessToken(
-      OAuthProvider provider, String authorizationCode, String codeVerifier) {
+      OAuthProvider provider, String authorizationCode, String codeVerifier, String origin) {
     try {
       return switch (provider) {
-        case GOOGLE -> fetchGoogleAccessToken(authorizationCode, codeVerifier);
-        case KAKAO -> fetchKakaoAccessToken(authorizationCode, codeVerifier);
+        case GOOGLE -> fetchGoogleAccessToken(authorizationCode, codeVerifier, origin);
+        case KAKAO -> fetchKakaoAccessToken(authorizationCode, codeVerifier, origin);
       };
     } catch (WebClientResponseException e) {
       log.warn(
@@ -72,13 +72,13 @@ public class OAuthAdapter implements OAuthPort {
     }
   }
 
-  private String fetchGoogleAccessToken(String authorizationCode, String codeVerifier) {
+  private String fetchGoogleAccessToken(String authorizationCode, String codeVerifier, String origin) {
     OAuthProperties.Provider google = oAuthProperties.getGoogle();
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("code", authorizationCode);
     params.add("client_id", google.getClientId());
     params.add("client_secret", google.getClientSecret());
-    params.add("redirect_uri", google.getRedirectUri());
+    params.add("redirect_uri", google.resolveRedirectUri(origin));
     params.add("grant_type", "authorization_code");
     params.add("code_verifier", codeVerifier);
 
@@ -105,13 +105,13 @@ public class OAuthAdapter implements OAuthPort {
         .block();
   }
 
-  private String fetchKakaoAccessToken(String authorizationCode, String codeVerifier) {
+  private String fetchKakaoAccessToken(String authorizationCode, String codeVerifier, String origin) {
     OAuthProperties.Provider kakao = oAuthProperties.getKakao();
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("code", authorizationCode);
     params.add("client_id", kakao.getClientId());
     params.add("client_secret", kakao.getClientSecret());
-    params.add("redirect_uri", kakao.getRedirectUri());
+    params.add("redirect_uri", kakao.resolveRedirectUri(origin));
     params.add("grant_type", "authorization_code");
     params.add("code_verifier", codeVerifier);
 
