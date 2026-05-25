@@ -1,9 +1,8 @@
 package com.gamyeon.user.infrastructure.external;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "oauth")
 public class OAuthProperties {

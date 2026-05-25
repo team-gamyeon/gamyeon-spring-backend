@@ -9,7 +9,8 @@ public class OAuthLoginCommand {
   private final String codeVerifier;
   private final String origin;
 
-  private OAuthLoginCommand(OAuthProvider provider, String authorizationCode, String codeVerifier, String origin) {
+  private OAuthLoginCommand(
+      OAuthProvider provider, String authorizationCode, String codeVerifier, String origin) {
     this.provider = provider;
     this.authorizationCode = authorizationCode;
     this.codeVerifier = codeVerifier;

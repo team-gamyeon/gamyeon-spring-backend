@@ -72,7 +72,8 @@ public class OAuthAdapter implements OAuthPort {
     }
   }
 
-  private String fetchGoogleAccessToken(String authorizationCode, String codeVerifier, String origin) {
+  private String fetchGoogleAccessToken(
+      String authorizationCode, String codeVerifier, String origin) {
     OAuthProperties.Provider google = oAuthProperties.getGoogle();
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("code", authorizationCode);
@@ -105,7 +106,8 @@ public class OAuthAdapter implements OAuthPort {
         .block();
   }
 
-  private String fetchKakaoAccessToken(String authorizationCode, String codeVerifier, String origin) {
+  private String fetchKakaoAccessToken(
+      String authorizationCode, String codeVerifier, String origin) {
     OAuthProperties.Provider kakao = oAuthProperties.getKakao();
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("code", authorizationCode);
