@@ -8,7 +8,6 @@ import com.gamyeon.user.application.port.inbound.LoginResult;
 import com.gamyeon.user.application.port.inbound.OAuthLoginCommand;
 import com.gamyeon.user.domain.OAuthProvider;
 import com.gamyeon.user.domain.UserSuccessCode;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
@@ -33,16 +32,17 @@ public class AuthController {
 
   @PostMapping("/login/{provider}")
   public ResponseEntity<SuccessResponse<LoginResponse>> login(
-      @PathVariable String provider,
-      @Valid @RequestBody LoginRequest request,
-      HttpServletRequest httpRequest) {
-    log.info("Received login request. provider={}", provider);
+      @PathVariable String provider, @Valid @RequestBody LoginRequest request) {
+    log.info(
+        "Received login request. provider={}, redirectUri={}", provider, request.redirectUri());
 
-    String origin = httpRequest.getHeader("Origin");
     OAuthProvider oAuthProvider = parseProvider(provider);
     OAuthLoginCommand command =
         OAuthLoginCommand.of(
-            oAuthProvider, request.authorizationCode(), request.codeVerifier(), origin);
+            oAuthProvider,
+            request.authorizationCode(),
+            request.codeVerifier(),
+            request.redirectUri());
     LoginResult result = authUseCase.login(command);
     return ResponseEntity.ok(
         SuccessResponse.of(UserSuccessCode.USER_LOGIN, LoginResponse.from(result)));
@@ -74,7 +74,10 @@ public class AuthController {
     };
   }
 
-  public record LoginRequest(@NotBlank String authorizationCode, @NotBlank String codeVerifier) {}
+  public record LoginRequest(
+      @NotBlank String authorizationCode,
+      @NotBlank String codeVerifier,
+      @NotBlank String redirectUri) {}
 
   public record ReissueRequest(@NotBlank String refreshToken) {}
 

@@ -5,7 +5,7 @@ import com.gamyeon.user.domain.OAuthProvider;
 public interface OAuthPort {
 
   String getAccessToken(
-      OAuthProvider provider, String authorizationCode, String codeVerifier, String origin);
+      OAuthProvider provider, String authorizationCode, String codeVerifier, String redirectUri);
 
   OAuthUserInfo getUserInfo(OAuthProvider provider, String accessToken);
 

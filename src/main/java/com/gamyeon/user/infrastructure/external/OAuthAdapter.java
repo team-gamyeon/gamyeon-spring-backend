@@ -33,11 +33,11 @@ public class OAuthAdapter implements OAuthPort {
 
   @Override
   public String getAccessToken(
-      OAuthProvider provider, String authorizationCode, String codeVerifier, String origin) {
+      OAuthProvider provider, String authorizationCode, String codeVerifier, String redirectUri) {
     try {
       return switch (provider) {
-        case GOOGLE -> fetchGoogleAccessToken(authorizationCode, codeVerifier, origin);
-        case KAKAO -> fetchKakaoAccessToken(authorizationCode, codeVerifier, origin);
+        case GOOGLE -> fetchGoogleAccessToken(authorizationCode, codeVerifier, redirectUri);
+        case KAKAO -> fetchKakaoAccessToken(authorizationCode, codeVerifier, redirectUri);
       };
     } catch (WebClientResponseException e) {
       log.warn(
@@ -73,16 +73,20 @@ public class OAuthAdapter implements OAuthPort {
   }
 
   private String fetchGoogleAccessToken(
-      String authorizationCode, String codeVerifier, String origin) {
+      String authorizationCode, String codeVerifier, String redirectUri) {
     OAuthProperties.Provider google = oAuthProperties.getGoogle();
-    String resolvedRedirectUri = google.resolveRedirectUri(origin);
-    // INFO: Google에 실제로 전송하는 redirect_uri 확인
-    log.info("[OAuth] GOOGLE 토큰 요청 — origin='{}', redirect_uri='{}'", origin, resolvedRedirectUri);
+
+    // INFO: Google에 실제로 전송할 redirect_uri 확인 (허용 목록 검증 포함)
+    log.info("[OAuth] GOOGLE 토큰 요청 — redirect_uri='{}'", redirectUri);
+    if (!google.isAllowedRedirectUri(redirectUri)) {
+      throw new CommonException(CommonErrorCode.INVALID_INPUT);
+    }
+
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("code", authorizationCode);
     params.add("client_id", google.getClientId());
     params.add("client_secret", google.getClientSecret());
-    params.add("redirect_uri", resolvedRedirectUri);
+    params.add("redirect_uri", redirectUri);
     params.add("grant_type", "authorization_code");
     params.add("code_verifier", codeVerifier);
 
@@ -110,16 +114,20 @@ public class OAuthAdapter implements OAuthPort {
   }
 
   private String fetchKakaoAccessToken(
-      String authorizationCode, String codeVerifier, String origin) {
+      String authorizationCode, String codeVerifier, String redirectUri) {
     OAuthProperties.Provider kakao = oAuthProperties.getKakao();
-    String resolvedRedirectUri = kakao.resolveRedirectUri(origin);
-    // INFO: Kakao에 실제로 전송하는 redirect_uri 확인
-    log.info("[OAuth] KAKAO 토큰 요청 — origin='{}', redirect_uri='{}'", origin, resolvedRedirectUri);
+
+    // INFO: Kakao에 실제로 전송할 redirect_uri 확인 (허용 목록 검증 포함)
+    log.info("[OAuth] KAKAO 토큰 요청 — redirect_uri='{}'", redirectUri);
+    if (!kakao.isAllowedRedirectUri(redirectUri)) {
+      throw new CommonException(CommonErrorCode.INVALID_INPUT);
+    }
+
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("code", authorizationCode);
     params.add("client_id", kakao.getClientId());
     params.add("client_secret", kakao.getClientSecret());
-    params.add("redirect_uri", resolvedRedirectUri);
+    params.add("redirect_uri", redirectUri);
     params.add("grant_type", "authorization_code");
     params.add("code_verifier", codeVerifier);
 
