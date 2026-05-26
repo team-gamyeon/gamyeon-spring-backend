@@ -75,11 +75,14 @@ public class OAuthAdapter implements OAuthPort {
   private String fetchGoogleAccessToken(
       String authorizationCode, String codeVerifier, String origin) {
     OAuthProperties.Provider google = oAuthProperties.getGoogle();
+    String resolvedRedirectUri = google.resolveRedirectUri(origin);
+    // INFO: Google에 실제로 전송하는 redirect_uri 확인
+    log.info("[OAuth] GOOGLE 토큰 요청 — origin='{}', redirect_uri='{}'", origin, resolvedRedirectUri);
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("code", authorizationCode);
     params.add("client_id", google.getClientId());
     params.add("client_secret", google.getClientSecret());
-    params.add("redirect_uri", google.resolveRedirectUri(origin));
+    params.add("redirect_uri", resolvedRedirectUri);
     params.add("grant_type", "authorization_code");
     params.add("code_verifier", codeVerifier);
 
@@ -109,11 +112,14 @@ public class OAuthAdapter implements OAuthPort {
   private String fetchKakaoAccessToken(
       String authorizationCode, String codeVerifier, String origin) {
     OAuthProperties.Provider kakao = oAuthProperties.getKakao();
+    String resolvedRedirectUri = kakao.resolveRedirectUri(origin);
+    // INFO: Kakao에 실제로 전송하는 redirect_uri 확인
+    log.info("[OAuth] KAKAO 토큰 요청 — origin='{}', redirect_uri='{}'", origin, resolvedRedirectUri);
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("code", authorizationCode);
     params.add("client_id", kakao.getClientId());
     params.add("client_secret", kakao.getClientSecret());
-    params.add("redirect_uri", kakao.resolveRedirectUri(origin));
+    params.add("redirect_uri", resolvedRedirectUri);
     params.add("grant_type", "authorization_code");
     params.add("code_verifier", codeVerifier);
 
