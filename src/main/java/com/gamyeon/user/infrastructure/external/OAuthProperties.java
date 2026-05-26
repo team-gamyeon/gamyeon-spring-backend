@@ -64,7 +64,9 @@ public class OAuthProperties {
      * 프론트엔드가 전달한 redirectUri가 허용 목록에 있는지 검증합니다.
      *
      * <p>ERROR: 환경변수 바인딩 실패로 목록이 비어 있는 경우
+     *
      * <p>ERROR: 허용 목록에 없는 URI가 요청된 경우 (잘못된 클라이언트 설정 또는 비정상 요청)
+     *
      * <p>DEBUG: 검증 성공 시 URI 출력
      */
     public boolean isAllowedRedirectUri(String redirectUri) {
@@ -85,8 +87,7 @@ public class OAuthProperties {
         log.debug("[OAuth] redirectUri 검증 성공: '{}'", redirectUri);
       } else {
         // ERROR: 허용되지 않은 URI — 잘못된 클라이언트 설정이거나 비정상 요청
-        log.error(
-            "[OAuth] 허용되지 않은 redirectUri 요청: '{}'. 허용 목록: {}", redirectUri, redirectUris);
+        log.error("[OAuth] 허용되지 않은 redirectUri 요청: '{}'. 허용 목록: {}", redirectUri, redirectUris);
       }
 
       return allowed;
