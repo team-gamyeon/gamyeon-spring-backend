@@ -55,11 +55,11 @@ class AuthServiceTest {
   void shouldSaveUserAndIssueJwtWhenNewUserLogsIn() {
     OAuthLoginCommand command =
         OAuthLoginCommand.of(
-            OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr");
+            OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr/signin");
 
     given(
             oAuthPort.getAccessToken(
-                OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr"))
+                OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr/signin"))
         .willReturn("oauth-token");
     given(oAuthPort.getUserInfo(OAuthProvider.GOOGLE, "oauth-token"))
         .willReturn(mockUserInfo("google-123", "test@gmail.com", "테스터"));
@@ -84,11 +84,11 @@ class AuthServiceTest {
     User existingUser = existingUser(1L, OAuthProvider.GOOGLE, "google-123");
     OAuthLoginCommand command =
         OAuthLoginCommand.of(
-            OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr");
+            OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr/signin");
 
     given(
             oAuthPort.getAccessToken(
-                OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr"))
+                OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr/signin"))
         .willReturn("oauth-token");
     given(oAuthPort.getUserInfo(OAuthProvider.GOOGLE, "oauth-token"))
         .willReturn(mockUserInfo("google-123", "test@gmail.com", "테스터"));
@@ -109,11 +109,11 @@ class AuthServiceTest {
     User bannedUser = userWithStatus(1L, OAuthProvider.GOOGLE, "google-123", UserStatus.BANNED);
     OAuthLoginCommand command =
         OAuthLoginCommand.of(
-            OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr");
+            OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr/signin");
 
     given(
             oAuthPort.getAccessToken(
-                OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr"))
+                OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr/signin"))
         .willReturn("oauth-token");
     given(oAuthPort.getUserInfo(OAuthProvider.GOOGLE, "oauth-token"))
         .willReturn(mockUserInfo("google-123", "test@gmail.com", "테스터"));
@@ -130,11 +130,11 @@ class AuthServiceTest {
     User withdrewUser = userWithStatus(1L, OAuthProvider.GOOGLE, "google-123", UserStatus.WITHDREW);
     OAuthLoginCommand command =
         OAuthLoginCommand.of(
-            OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr");
+            OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr/signin");
 
     given(
             oAuthPort.getAccessToken(
-                OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr"))
+                OAuthProvider.GOOGLE, "auth-code", "code-verifier", "https://gamyeon.co.kr/signin"))
         .willReturn("oauth-token");
     given(oAuthPort.getUserInfo(OAuthProvider.GOOGLE, "oauth-token"))
         .willReturn(mockUserInfo("google-123", "test@gmail.com", "테스터"));
