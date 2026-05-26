@@ -75,9 +75,7 @@ public class OAuthProperties {
       // WARN: Origin 헤더가 없는 경우 (nginx가 헤더를 제거했거나, 비브라우저 클라이언트)
       if (origin == null || origin.isBlank()) {
         String fallback = redirectUris.get(0);
-        log.warn(
-            "[OAuth] Origin 헤더가 없습니다. 첫 번째 URI로 폴백합니다. fallback={}",
-            fallback);
+        log.warn("[OAuth] Origin 헤더가 없습니다. 첫 번째 URI로 폴백합니다. fallback={}", fallback);
         return fallback;
       }
 
@@ -86,7 +84,9 @@ public class OAuthProperties {
 
       return redirectUris.stream()
           .filter(uri -> uri.startsWith(origin))
-          .peek(matched -> log.debug("[OAuth] 매칭 성공: origin='{}' → redirectUri='{}'", origin, matched))
+          .peek(
+              matched ->
+                  log.debug("[OAuth] 매칭 성공: origin='{}' → redirectUri='{}'", origin, matched))
           .findFirst()
           .orElseGet(
               () -> {
