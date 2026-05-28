@@ -33,11 +33,16 @@ public class AuthController {
   @PostMapping("/login/{provider}")
   public ResponseEntity<SuccessResponse<LoginResponse>> login(
       @PathVariable String provider, @Valid @RequestBody LoginRequest request) {
-    log.info("Received login request. provider={}", provider);
+    log.info(
+        "Received login request. provider={}, redirectUri={}", provider, request.redirectUri());
 
     OAuthProvider oAuthProvider = parseProvider(provider);
     OAuthLoginCommand command =
-        OAuthLoginCommand.of(oAuthProvider, request.authorizationCode(), request.codeVerifier());
+        OAuthLoginCommand.of(
+            oAuthProvider,
+            request.authorizationCode(),
+            request.codeVerifier(),
+            request.redirectUri());
     LoginResult result = authUseCase.login(command);
     return ResponseEntity.ok(
         SuccessResponse.of(UserSuccessCode.USER_LOGIN, LoginResponse.from(result)));
@@ -69,7 +74,10 @@ public class AuthController {
     };
   }
 
-  public record LoginRequest(@NotBlank String authorizationCode, @NotBlank String codeVerifier) {}
+  public record LoginRequest(
+      @NotBlank String authorizationCode,
+      @NotBlank String codeVerifier,
+      @NotBlank String redirectUri) {}
 
   public record ReissueRequest(@NotBlank String refreshToken) {}
 
