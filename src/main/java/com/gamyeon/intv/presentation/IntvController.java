@@ -4,14 +4,17 @@ import com.gamyeon.common.response.ApiResponse;
 import com.gamyeon.intv.application.dto.command.ChangeStateIntvCommand;
 import com.gamyeon.intv.application.dto.result.FinishedIntvDailyCountInfo;
 import com.gamyeon.intv.application.dto.result.IntvInfo;
+import com.gamyeon.intv.application.dto.result.ResumeContextInfo;
 import com.gamyeon.intv.application.usecase.ChangeStateUseCase;
 import com.gamyeon.intv.application.usecase.CreateUseCase;
 import com.gamyeon.intv.application.usecase.GetFinishedIntvStatsUseCase;
+import com.gamyeon.intv.application.usecase.GetResumeContextUseCase;
 import com.gamyeon.intv.application.usecase.UpdateTitleUseCase;
 import com.gamyeon.intv.domain.IntvSuccessCode;
 import com.gamyeon.intv.presentation.dto.request.IntvRequest;
 import com.gamyeon.intv.presentation.dto.response.FinishedIntvDailyCountResponse;
 import com.gamyeon.intv.presentation.dto.response.IntvResponse;
+import com.gamyeon.intv.presentation.dto.response.ResumeContextResponse;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
@@ -37,16 +40,19 @@ public class IntvController {
   private final ChangeStateUseCase changeStateUseCase;
   private final UpdateTitleUseCase updateTitleUseCase;
   private final GetFinishedIntvStatsUseCase getFinishedIntvStatsUseCase;
+  private final GetResumeContextUseCase getResumeContextUseCase;
 
   public IntvController(
       CreateUseCase createUseCase,
       ChangeStateUseCase changeStateUseCase,
       UpdateTitleUseCase updateTitleUseCase,
-      GetFinishedIntvStatsUseCase getFinishedIntvStatsUseCase) {
+      GetFinishedIntvStatsUseCase getFinishedIntvStatsUseCase,
+      GetResumeContextUseCase getResumeContextUseCase) {
     this.createUseCase = createUseCase;
     this.changeStateUseCase = changeStateUseCase;
     this.updateTitleUseCase = updateTitleUseCase;
     this.getFinishedIntvStatsUseCase = getFinishedIntvStatsUseCase;
+    this.getResumeContextUseCase = getResumeContextUseCase;
   }
 
   @PostMapping
@@ -98,6 +104,16 @@ public class IntvController {
     changeStateUseCase.resume(new ChangeStateIntvCommand(userId, intvId));
 
     return ApiResponse.success(IntvSuccessCode.INTV_RESUMED);
+  }
+
+  @GetMapping("/{intvId}/resume-context")
+  public ResponseEntity<ApiResponse<ResumeContextResponse>> getResumeContext(
+      @AuthenticationPrincipal Long userId, @PathVariable Long intvId) {
+    log.info("Received get resume context request. userId={}, intvId={}", userId, intvId);
+    ResumeContextInfo info = getResumeContextUseCase.getResumeContext(userId, intvId);
+
+    return ApiResponse.success(
+        IntvSuccessCode.INTV_RESUME_CONTEXT_FETCHED, ResumeContextResponse.from(info));
   }
 
   @PatchMapping("/{intvId}/finish")
