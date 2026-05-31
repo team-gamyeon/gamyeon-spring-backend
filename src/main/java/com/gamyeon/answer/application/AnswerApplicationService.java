@@ -80,9 +80,7 @@ public class AnswerApplicationService
 
     String fileKey =
         storageFileKeyGenerator.generate(
-            "answers",
-            List.of(String.valueOf(intvId)),
-            command.originalFileName());
+            "answers", List.of(String.valueOf(intvId)), command.originalFileName());
     StoragePresignedUrlResult result =
         storagePresignedUrlPort.createUploadUrl(
             new StoragePresignedUrlCommand(fileKey, command.contentType()));
