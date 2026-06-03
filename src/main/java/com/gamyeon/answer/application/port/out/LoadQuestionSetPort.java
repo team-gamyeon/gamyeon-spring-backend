@@ -4,5 +4,7 @@ public interface LoadQuestionSetPort {
 
   boolean existsById(Long questionSetId);
 
+  Long getIntvId(Long questionSetId);
+
   String getQuestionContent(Long questionSetId);
 }

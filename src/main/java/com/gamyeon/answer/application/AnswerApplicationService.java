@@ -76,12 +76,11 @@ public class AnswerApplicationService
         command.fileSizeBytes());
     validateVideoFile(command.originalFileName(), command.contentType());
     validateFileSize(command.fileSizeBytes());
+    Long intvId = loadQuestionSetPort.getIntvId(command.questionSetId());
 
     String fileKey =
         storageFileKeyGenerator.generate(
-            "answers",
-            List.of(String.valueOf(command.questionSetId()), "video"),
-            command.originalFileName());
+            "answers", List.of(String.valueOf(intvId)), command.originalFileName());
     StoragePresignedUrlResult result =
         storagePresignedUrlPort.createUploadUrl(
             new StoragePresignedUrlCommand(fileKey, command.contentType()));
