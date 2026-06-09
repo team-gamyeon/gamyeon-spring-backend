@@ -4,21 +4,28 @@ import com.gamyeon.common.response.ApiResponse;
 import com.gamyeon.intv.application.dto.command.ChangeStateIntvCommand;
 import com.gamyeon.intv.application.dto.result.FinishedIntvDailyCountInfo;
 import com.gamyeon.intv.application.dto.result.IntvInfo;
+import com.gamyeon.intv.application.dto.result.IntvListInfo;
 import com.gamyeon.intv.application.dto.result.ResumeContextInfo;
 import com.gamyeon.intv.application.usecase.ChangeStateUseCase;
 import com.gamyeon.intv.application.usecase.CreateUseCase;
 import com.gamyeon.intv.application.usecase.GetFinishedIntvStatsUseCase;
+import com.gamyeon.intv.application.usecase.GetIntvListUseCase;
 import com.gamyeon.intv.application.usecase.GetResumeContextUseCase;
 import com.gamyeon.intv.application.usecase.UpdateTitleUseCase;
+import com.gamyeon.intv.domain.IntvStatus;
 import com.gamyeon.intv.domain.IntvSuccessCode;
 import com.gamyeon.intv.presentation.dto.request.IntvRequest;
 import com.gamyeon.intv.presentation.dto.response.FinishedIntvDailyCountResponse;
+import com.gamyeon.intv.presentation.dto.response.IntvListResponse;
 import com.gamyeon.intv.presentation.dto.response.IntvResponse;
 import com.gamyeon.intv.presentation.dto.response.ResumeContextResponse;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -40,6 +47,7 @@ public class IntvController {
   private final ChangeStateUseCase changeStateUseCase;
   private final UpdateTitleUseCase updateTitleUseCase;
   private final GetFinishedIntvStatsUseCase getFinishedIntvStatsUseCase;
+  private final GetIntvListUseCase getIntvListUseCase;
   private final GetResumeContextUseCase getResumeContextUseCase;
 
   public IntvController(
@@ -47,12 +55,31 @@ public class IntvController {
       ChangeStateUseCase changeStateUseCase,
       UpdateTitleUseCase updateTitleUseCase,
       GetFinishedIntvStatsUseCase getFinishedIntvStatsUseCase,
+      GetIntvListUseCase getIntvListUseCase,
       GetResumeContextUseCase getResumeContextUseCase) {
     this.createUseCase = createUseCase;
     this.changeStateUseCase = changeStateUseCase;
     this.updateTitleUseCase = updateTitleUseCase;
     this.getFinishedIntvStatsUseCase = getFinishedIntvStatsUseCase;
+    this.getIntvListUseCase = getIntvListUseCase;
     this.getResumeContextUseCase = getResumeContextUseCase;
+  }
+
+  @GetMapping
+  public ResponseEntity<ApiResponse<IntvListResponse>> getIntvs(
+      @AuthenticationPrincipal Long userId,
+      @RequestParam(required = false) List<IntvStatus> status,
+      @PageableDefault(size = 20, sort = "updatedAt", direction = Sort.Direction.DESC)
+          Pageable pageable) {
+    log.info(
+        "Received get intv list request. userId={}, status={}, page={}, size={}",
+        userId,
+        status,
+        pageable.getPageNumber(),
+        pageable.getPageSize());
+    IntvListInfo info = getIntvListUseCase.getIntvs(userId, status, pageable);
+
+    return ApiResponse.success(IntvSuccessCode.INTV_LIST_FETCHED, IntvListResponse.from(info));
   }
 
   @PostMapping
