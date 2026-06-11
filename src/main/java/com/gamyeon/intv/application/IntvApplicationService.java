@@ -1,41 +1,76 @@
 package com.gamyeon.intv.application;
 
+import com.gamyeon.answer.domain.Answer;
+import com.gamyeon.answer.domain.AnswerRepository;
 import com.gamyeon.intv.application.dto.command.ChangeStateIntvCommand;
 import com.gamyeon.intv.application.dto.command.CreateIntvCommand;
 import com.gamyeon.intv.application.dto.command.UpdateIntvCommand;
 import com.gamyeon.intv.application.dto.result.FinishedIntvDailyCountInfo;
 import com.gamyeon.intv.application.dto.result.IntvInfo;
+import com.gamyeon.intv.application.dto.result.IntvListInfo;
+import com.gamyeon.intv.application.dto.result.IntvListItemInfo;
+import com.gamyeon.intv.application.dto.result.QuestionProgressInfo;
+import com.gamyeon.intv.application.dto.result.RemainingQuestionInfo;
+import com.gamyeon.intv.application.dto.result.ResumeContextInfo;
+import com.gamyeon.intv.application.dto.result.ResumeIntvInfo;
 import com.gamyeon.intv.application.usecase.ChangeStateUseCase;
 import com.gamyeon.intv.application.usecase.CreateUseCase;
 import com.gamyeon.intv.application.usecase.GetFinishedIntvStatsUseCase;
+import com.gamyeon.intv.application.usecase.GetIntvListUseCase;
+import com.gamyeon.intv.application.usecase.GetResumeContextUseCase;
 import com.gamyeon.intv.application.usecase.UpdateTitleUseCase;
 import com.gamyeon.intv.domain.Intv;
 import com.gamyeon.intv.domain.IntvErrorCode;
 import com.gamyeon.intv.domain.IntvException;
 import com.gamyeon.intv.domain.IntvRepository;
+import com.gamyeon.intv.domain.IntvStatus;
 import com.gamyeon.intv.domain.event.InterviewFinishedEvent;
 import com.gamyeon.preparation.application.port.in.PreparationUseCase;
+import com.gamyeon.question.domain.QuestionSet;
+import com.gamyeon.question.domain.QuestionSetRepository;
+import com.gamyeon.report.application.port.in.ReportSummaryQueryUseCase;
+import com.gamyeon.report.application.port.in.ReportSummaryResult;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
 public class IntvApplicationService
-    implements CreateUseCase, ChangeStateUseCase, UpdateTitleUseCase, GetFinishedIntvStatsUseCase {
+    implements CreateUseCase,
+        ChangeStateUseCase,
+        UpdateTitleUseCase,
+        GetFinishedIntvStatsUseCase,
+        GetIntvListUseCase,
+        GetResumeContextUseCase {
 
   private final IntvRepository intvRepository;
+  private final QuestionSetRepository questionSetRepository;
+  private final AnswerRepository answerRepository;
+  private final ReportSummaryQueryUseCase reportSummaryQueryUseCase;
   private final PreparationUseCase preparationUseCase;
   private final ApplicationEventPublisher eventPublisher;
 
   public IntvApplicationService(
       IntvRepository intvRepository,
+      QuestionSetRepository questionSetRepository,
+      AnswerRepository answerRepository,
+      ReportSummaryQueryUseCase reportSummaryQueryUseCase,
       PreparationUseCase preparationUseCase,
       ApplicationEventPublisher eventPublisher) {
     this.intvRepository = intvRepository;
+    this.questionSetRepository = questionSetRepository;
+    this.answerRepository = answerRepository;
+    this.reportSummaryQueryUseCase = reportSummaryQueryUseCase;
     this.preparationUseCase = preparationUseCase;
     this.eventPublisher = eventPublisher;
   }
@@ -69,9 +104,28 @@ public class IntvApplicationService
   }
 
   @Override
-  public void resume(ChangeStateIntvCommand command) {
+  public ResumeIntvInfo resume(ChangeStateIntvCommand command) {
     Intv intv = getOwnedIntv(command.userId(), command.intvId());
     intv.resume();
+
+    List<QuestionSet> questions = questionSetRepository.getAllByIntvId(intv.getId());
+    Set<Long> answeredQuestionSetIds =
+        answerRepository.findAllByIntvId(intv.getId()).stream()
+            .map(Answer::getQuestionSetId)
+            .collect(Collectors.toSet());
+    List<RemainingQuestionInfo> remainingQuestions =
+        questions.stream()
+            .filter(question -> !answeredQuestionSetIds.contains(question.getId()))
+            .map(RemainingQuestionInfo::from)
+            .toList();
+
+    return new ResumeIntvInfo(
+        intv.getId(),
+        intv.getStatus(),
+        remainingQuestions.isEmpty() && !questions.isEmpty(),
+        questions.size(),
+        questions.size() - remainingQuestions.size(),
+        remainingQuestions);
   }
 
   @Override
@@ -92,6 +146,69 @@ public class IntvApplicationService
             userId, startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay());
 
     return fillEmptyDates(startDate, endDate, counts);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public IntvListInfo getIntvs(Long userId, List<IntvStatus> statuses, Pageable pageable) {
+    Page<Intv> intvPage = intvRepository.findAllByUserIdAndStatuses(userId, statuses, pageable);
+    List<Long> finishedIntvIds =
+        intvPage.getContent().stream()
+            .filter(intv -> intv.getStatus() == IntvStatus.FINISHED)
+            .map(Intv::getId)
+            .toList();
+    Map<Long, ReportSummaryResult> reportByIntvId =
+        reportSummaryQueryUseCase.findAllByIntvIds(finishedIntvIds).stream()
+            .collect(Collectors.toMap(ReportSummaryResult::intvId, Function.identity()));
+    List<IntvListItemInfo> content =
+        intvPage.getContent().stream()
+            .map(intv -> IntvListItemInfo.from(intv, reportByIntvId.get(intv.getId())))
+            .toList();
+
+    return new IntvListInfo(
+        content,
+        intvPage.getNumber(),
+        intvPage.getSize(),
+        intvPage.getTotalElements(),
+        intvPage.getTotalPages());
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public ResumeContextInfo getResumeContext(Long userId, Long intvId) {
+    Intv intv = getOwnedIntv(userId, intvId);
+    List<QuestionSet> questions = questionSetRepository.getAllByIntvId(intv.getId());
+    Map<Long, Answer> answersByQuestionSetId =
+        answerRepository.findAllByIntvId(intv.getId()).stream()
+            .collect(
+                Collectors.toMap(
+                    Answer::getQuestionSetId, Function.identity(), (left, right) -> left));
+
+    List<QuestionProgressInfo> questionProgresses =
+        questions.stream()
+            .map(
+                question ->
+                    QuestionProgressInfo.of(question, answersByQuestionSetId.get(question.getId())))
+            .toList();
+
+    int answeredCount =
+        (int) questionProgresses.stream().filter(QuestionProgressInfo::answered).count();
+    QuestionProgressInfo nextQuestion =
+        questionProgresses.stream()
+            .filter(question -> !question.answered())
+            .findFirst()
+            .orElse(null);
+
+    return new ResumeContextInfo(
+        intv.getId(),
+        intv.getStatus(),
+        questions.size(),
+        answeredCount,
+        nextQuestion == null && !questions.isEmpty(),
+        nextQuestion == null ? null : nextQuestion.questionSetId(),
+        nextQuestion == null ? null : nextQuestion.questionOrder(),
+        nextQuestion == null ? null : nextQuestion.content(),
+        questionProgresses);
   }
 
   private Intv getOwnedIntv(Long userId, Long intvId) {
