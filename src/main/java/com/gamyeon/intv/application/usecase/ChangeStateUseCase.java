@@ -1,7 +1,6 @@
 package com.gamyeon.intv.application.usecase;
 
 import com.gamyeon.intv.application.dto.command.ChangeStateIntvCommand;
-import com.gamyeon.intv.application.dto.result.ResumeIntvInfo;
 
 public interface ChangeStateUseCase {
 
@@ -9,7 +8,7 @@ public interface ChangeStateUseCase {
 
   void pause(ChangeStateIntvCommand command);
 
-  ResumeIntvInfo resume(ChangeStateIntvCommand command);
+  void resume(ChangeStateIntvCommand command);
 
   void finish(ChangeStateIntvCommand command);
 }

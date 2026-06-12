@@ -6,7 +6,6 @@ import com.gamyeon.intv.application.dto.result.FinishedIntvDailyCountInfo;
 import com.gamyeon.intv.application.dto.result.IntvInfo;
 import com.gamyeon.intv.application.dto.result.IntvListInfo;
 import com.gamyeon.intv.application.dto.result.ResumeContextInfo;
-import com.gamyeon.intv.application.dto.result.ResumeIntvInfo;
 import com.gamyeon.intv.application.usecase.ChangeStateUseCase;
 import com.gamyeon.intv.application.usecase.CreateUseCase;
 import com.gamyeon.intv.application.usecase.GetFinishedIntvStatsUseCase;
@@ -20,7 +19,6 @@ import com.gamyeon.intv.presentation.dto.response.FinishedIntvDailyCountResponse
 import com.gamyeon.intv.presentation.dto.response.IntvListResponse;
 import com.gamyeon.intv.presentation.dto.response.IntvResponse;
 import com.gamyeon.intv.presentation.dto.response.ResumeContextResponse;
-import com.gamyeon.intv.presentation.dto.response.ResumeIntvResponse;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
@@ -127,12 +125,12 @@ public class IntvController {
   }
 
   @PatchMapping("/{intvId}/resume")
-  public ResponseEntity<ApiResponse<ResumeIntvResponse>> resumeIntv(
+  public ResponseEntity<ApiResponse<Void>> resumeIntv(
       @AuthenticationPrincipal Long userId, @PathVariable Long intvId) {
     log.info("Received resume intv request. userId={}, intvId={}", userId, intvId);
-    ResumeIntvInfo info = changeStateUseCase.resume(new ChangeStateIntvCommand(userId, intvId));
+    changeStateUseCase.resume(new ChangeStateIntvCommand(userId, intvId));
 
-    return ApiResponse.success(IntvSuccessCode.INTV_RESUMED, ResumeIntvResponse.from(info));
+    return ApiResponse.success(IntvSuccessCode.INTV_RESUMED);
   }
 
   @GetMapping("/{intvId}/resume-context")
