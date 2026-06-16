@@ -10,9 +10,7 @@ import com.gamyeon.intv.application.dto.result.IntvInfo;
 import com.gamyeon.intv.application.dto.result.IntvListInfo;
 import com.gamyeon.intv.application.dto.result.IntvListItemInfo;
 import com.gamyeon.intv.application.dto.result.QuestionProgressInfo;
-import com.gamyeon.intv.application.dto.result.RemainingQuestionInfo;
 import com.gamyeon.intv.application.dto.result.ResumeContextInfo;
-import com.gamyeon.intv.application.dto.result.ResumeIntvInfo;
 import com.gamyeon.intv.application.usecase.ChangeStateUseCase;
 import com.gamyeon.intv.application.usecase.CreateUseCase;
 import com.gamyeon.intv.application.usecase.GetFinishedIntvStatsUseCase;
@@ -34,7 +32,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
@@ -104,28 +101,9 @@ public class IntvApplicationService
   }
 
   @Override
-  public ResumeIntvInfo resume(ChangeStateIntvCommand command) {
+  public void resume(ChangeStateIntvCommand command) {
     Intv intv = getOwnedIntv(command.userId(), command.intvId());
     intv.resume();
-
-    List<QuestionSet> questions = questionSetRepository.getAllByIntvId(intv.getId());
-    Set<Long> answeredQuestionSetIds =
-        answerRepository.findAllByIntvId(intv.getId()).stream()
-            .map(Answer::getQuestionSetId)
-            .collect(Collectors.toSet());
-    List<RemainingQuestionInfo> remainingQuestions =
-        questions.stream()
-            .filter(question -> !answeredQuestionSetIds.contains(question.getId()))
-            .map(RemainingQuestionInfo::from)
-            .toList();
-
-    return new ResumeIntvInfo(
-        intv.getId(),
-        intv.getStatus(),
-        remainingQuestions.isEmpty() && !questions.isEmpty(),
-        questions.size(),
-        questions.size() - remainingQuestions.size(),
-        remainingQuestions);
   }
 
   @Override
