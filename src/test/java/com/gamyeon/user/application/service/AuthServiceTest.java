@@ -199,7 +199,8 @@ class AuthServiceTest {
 
     assertEquals(
         CommonErrorCode.EXPIRED_TOKEN, exception.getErrorCode(), "EXPIRED_TOKEN 에러코드로 응답해야 합니다");
-    verify(refreshTokenRepository).deleteByUserId(1L);
+    // 만료 토큰 삭제는 스케줄러에 위임 → reissue() 내에서 deleteByUserId 호출하지 않음
+    verify(refreshTokenRepository, never()).deleteByUserId(any());
   }
 
   // ── logout ──────────────────────────────────────────────────────────────

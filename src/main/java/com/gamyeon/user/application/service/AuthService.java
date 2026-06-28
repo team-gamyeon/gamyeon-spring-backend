@@ -15,6 +15,7 @@ import com.gamyeon.user.domain.RefreshToken;
 import com.gamyeon.user.domain.User;
 import com.gamyeon.user.domain.UserDomainException;
 import com.gamyeon.user.domain.UserErrorCode;
+import org.springframework.transaction.annotation.Transactional;
 
 public class AuthService implements AuthUseCase {
 
@@ -64,14 +65,17 @@ public class AuthService implements AuthUseCase {
     return issueTokens(user);
   }
 
+  @Transactional
   public LoginResult reissue(String refreshTokenValue) {
     RefreshToken refreshToken =
         refreshTokenRepository
             .findByToken(refreshTokenValue)
             .orElseThrow(() -> new CommonException(CommonErrorCode.EXPIRED_TOKEN));
 
+    // 만료된 경우: 예외만 던짐 (delete는 하지 않음)
+    // - @Transactional 내에서 RuntimeException 발생 시 rollback되므로 delete가 무의미
+    // - 만료 토큰 정리는 스케줄러에 위임
     if (refreshToken.isExpired()) {
-      refreshTokenRepository.deleteByUserId(refreshToken.getUserId());
       throw new CommonException(CommonErrorCode.EXPIRED_TOKEN);
     }
 
@@ -82,10 +86,13 @@ public class AuthService implements AuthUseCase {
 
     ensureLoginAllowed(user);
 
+    // deleteByUserId + save가 하나의 트랜잭션으로 묶임
+    // → save 실패 시 delete도 함께 rollback → 기존 토큰 보존, 500 방지
     refreshTokenRepository.deleteByUserId(user.getId());
     return issueTokens(user);
   }
 
+  @Transactional
   public void logout(Long userId) {
     refreshTokenRepository.deleteByUserId(userId);
   }
