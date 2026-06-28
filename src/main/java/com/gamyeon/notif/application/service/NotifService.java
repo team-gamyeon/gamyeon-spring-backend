@@ -1,9 +1,6 @@
 package com.gamyeon.notif.application.service;
 
-import com.gamyeon.notif.application.port.in.CreateNotifUseCase;
-import com.gamyeon.notif.application.port.in.GetNotifListUseCase;
-import com.gamyeon.notif.application.port.in.ReadNotifUseCase;
-import com.gamyeon.notif.application.port.in.SubscribeNotifUseCase;
+import com.gamyeon.notif.application.port.in.*;
 import com.gamyeon.notif.application.port.in.dto.NotifListResponse;
 import com.gamyeon.notif.application.port.in.dto.NotifResponse;
 import com.gamyeon.notif.application.port.in.event.NotifPublishEvent;
@@ -26,7 +23,11 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Service
 @RequiredArgsConstructor
 public class NotifService
-    implements SubscribeNotifUseCase, GetNotifListUseCase, ReadNotifUseCase, CreateNotifUseCase {
+    implements SubscribeNotifUseCase,
+        GetNotifListUseCase,
+        ReadNotifUseCase,
+        ReadAllNotifsUseCase,
+        CreateNotifUseCase {
 
   private final NotifRepository notifRepository;
 
