@@ -5,16 +5,18 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.gamyeon.answer.domain.Answer;
 import com.gamyeon.answer.domain.AnswerRepository;
+import com.gamyeon.intv.application.dto.command.ChangeStateIntvCommand;
 import com.gamyeon.intv.application.dto.result.IntvListInfo;
 import com.gamyeon.intv.application.dto.result.ResumeContextInfo;
-import com.gamyeon.intv.application.dto.result.ResumeIntvInfo;
 import com.gamyeon.intv.domain.Intv;
 import com.gamyeon.intv.domain.IntvErrorCode;
 import com.gamyeon.intv.domain.IntvException;
 import com.gamyeon.intv.domain.IntvRepository;
+import com.gamyeon.intv.domain.IntvStatus;
 import com.gamyeon.preparation.application.port.in.PreparationUseCase;
 import com.gamyeon.question.domain.QuestionSet;
 import com.gamyeon.question.domain.QuestionSetRepository;
@@ -139,64 +141,32 @@ class IntvApplicationServiceTest {
   }
 
   @Test
-  @DisplayName("INTV-005 - 면접 재개 시 답변이 없는 남은 질문을 순서대로 반환해야 한다")
-  void shouldReturnRemainingQuestionsWhenInterviewResumes() {
+  @DisplayName("INTV-005 - 면접 재개 시 상태만 IN_PROGRESS로 변경해야 한다")
+  void shouldOnlyChangeStatusWhenInterviewResumes() {
     Intv intv = pausedIntv(10L, 99L);
-    List<QuestionSet> questions =
-        List.of(
-            question(101L, 10L, 1),
-            question(102L, 10L, 2),
-            question(103L, 10L, 3),
-            question(104L, 10L, 4),
-            question(105L, 10L, 5),
-            question(106L, 10L, 6),
-            question(107L, 10L, 7));
-
     given(intvRepository.findById(10L)).willReturn(Optional.of(intv));
-    given(questionSetRepository.getAllByIntvId(10L)).willReturn(questions);
-    given(answerRepository.findAllByIntvId(10L))
-        .willReturn(List.of(answer(1L, 10L, 101L), answer(2L, 10L, 102L), answer(3L, 10L, 104L)));
 
-    ResumeIntvInfo result =
-        intvApplicationService.resume(
-            new com.gamyeon.intv.application.dto.command.ChangeStateIntvCommand(99L, 10L));
+    intvApplicationService.resume(new ChangeStateIntvCommand(99L, 10L));
 
-    assertEquals(com.gamyeon.intv.domain.IntvStatus.IN_PROGRESS, result.intvStatus());
-    assertFalse(result.completed());
-    assertEquals(7, result.totalQuestionCount());
-    assertEquals(3, result.answeredCount());
-    assertEquals(List.of(103L, 105L, 106L, 107L), questionIds(result));
+    assertEquals(IntvStatus.IN_PROGRESS, intv.getStatus());
+    verifyNoInteractions(questionSetRepository, answerRepository);
   }
 
   @Test
-  @DisplayName("INTV-006 - 모든 질문에 답변이 있으면 완료된 재개 결과를 반환해야 한다")
-  void shouldReturnCompletedResumeResultWhenAllQuestionsAreAnswered() {
-    Intv intv = pausedIntv(10L, 99L);
-    List<QuestionSet> questions =
-        List.of(
-            question(101L, 10L, 1),
-            question(102L, 10L, 2),
-            question(103L, 10L, 3),
-            question(104L, 10L, 4),
-            question(105L, 10L, 5),
-            question(106L, 10L, 6),
-            question(107L, 10L, 7));
-    List<Answer> answers =
-        questions.stream()
-            .map(question -> answer(question.getId(), 10L, question.getId()))
-            .toList();
+  @DisplayName("INTV-006 - PAUSED가 아닌 면접은 재개할 수 없다")
+  void shouldRejectResumeWhenInterviewIsNotPaused() {
+    Intv intv = intv(10L, 99L);
+    intv.start();
 
     given(intvRepository.findById(10L)).willReturn(Optional.of(intv));
-    given(questionSetRepository.getAllByIntvId(10L)).willReturn(questions);
-    given(answerRepository.findAllByIntvId(10L)).willReturn(answers);
 
-    ResumeIntvInfo result =
-        intvApplicationService.resume(
-            new com.gamyeon.intv.application.dto.command.ChangeStateIntvCommand(99L, 10L));
+    IntvException exception =
+        assertThrows(
+            IntvException.class,
+            () -> intvApplicationService.resume(new ChangeStateIntvCommand(99L, 10L)));
 
-    assertTrue(result.completed());
-    assertEquals(7, result.answeredCount());
-    assertTrue(result.remainingQuestions().isEmpty());
+    assertEquals(IntvErrorCode.DO_NOT_RESUME, exception.getErrorCode());
+    verifyNoInteractions(questionSetRepository, answerRepository);
   }
 
   private Intv intv(Long intvId, Long userId) {
@@ -210,10 +180,6 @@ class IntvApplicationServiceTest {
     intv.start();
     intv.pause();
     return intv;
-  }
-
-  private List<Long> questionIds(ResumeIntvInfo info) {
-    return info.remainingQuestions().stream().map(question -> question.questionSetId()).toList();
   }
 
   private QuestionSet question(Long questionSetId, Long intvId, Integer questionOrder) {
