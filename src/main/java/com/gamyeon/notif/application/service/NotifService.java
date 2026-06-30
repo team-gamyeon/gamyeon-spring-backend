@@ -99,7 +99,7 @@ public class NotifService
 
     return emitter;
   }
-  
+
   @Override
   @Transactional(readOnly = true)
   public NotifListResponse getNotifs(Long userId, Long cursorId, int size) {
@@ -107,7 +107,8 @@ public class NotifService
     int unreadCount = (int) notifRepository.countByUserIdAndIsReadFalse(userId);
 
     // 2. 요청된 size만큼만 가져오도록 Pageable 설정 (0페이지 고정, 개수는 size만큼)
-    org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, size);
+    org.springframework.data.domain.Pageable pageable =
+        org.springframework.data.domain.PageRequest.of(0, size);
 
     // 3. cursorId 유무에 따른 No-Offset DB 조회 분기 처리
     List<Notif> notifs;
@@ -121,9 +122,7 @@ public class NotifService
 
     // 4. DTO 변환 후 반환
     List<NotifResponse> responseList =
-            notifs.stream()
-                    .map(NotifResponse::from)
-                    .collect(Collectors.toList());
+        notifs.stream().map(NotifResponse::from).collect(Collectors.toList());
 
     return NotifListResponse.of(unreadCount, responseList);
   }
