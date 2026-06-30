@@ -99,19 +99,31 @@ public class NotifService
 
     return emitter;
   }
-
+  
   @Override
   @Transactional(readOnly = true)
   public NotifListResponse getNotifs(Long userId, Long cursorId, int size) {
-    // TODO: cursorId를 활용한 No-Offset 페이징 쿼리 적용 (현재는 예시로 최신순 전체 조회 후 자르기)
-    List<Notif> notifs = notifRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    // 1. 안 읽은 알림 카운트 쿼리 실행
+    int unreadCount = (int) notifRepository.countByUserIdAndIsReadFalse(userId);
 
-    // 안읽은 알림 개수 계산
-    int unreadCount = (int) notifs.stream().filter(n -> !n.isRead()).count();
+    // 2. 요청된 size만큼만 가져오도록 Pageable 설정 (0페이지 고정, 개수는 size만큼)
+    org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, size);
 
-    // DTO 변환 (요청된 size만큼만 반환하도록 개선 필요)
+    // 3. cursorId 유무에 따른 No-Offset DB 조회 분기 처리
+    List<Notif> notifs;
+    if (cursorId == null) {
+      // 처음 알림창을 열었을 때 (최신 5개)
+      notifs = notifRepository.findByUserIdOrderByIdDesc(userId, pageable);
+    } else {
+      // 스크롤을 내려서 과거 내역을 더 요청했을 때
+      notifs = notifRepository.findByUserIdAndIdLessThanOrderByIdDesc(userId, cursorId, pageable);
+    }
+
+    // 4. DTO 변환 후 반환
     List<NotifResponse> responseList =
-        notifs.stream().limit(size).map(NotifResponse::from).collect(Collectors.toList());
+            notifs.stream()
+                    .map(NotifResponse::from)
+                    .collect(Collectors.toList());
 
     return NotifListResponse.of(unreadCount, responseList);
   }

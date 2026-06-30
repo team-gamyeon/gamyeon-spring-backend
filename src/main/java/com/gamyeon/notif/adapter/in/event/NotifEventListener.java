@@ -1,4 +1,4 @@
-package com.gamyeon.notif.adapter.in.event.event;
+package com.gamyeon.notif.adapter.in.event;
 
 import com.gamyeon.notif.application.port.in.CreateNotifUseCase;
 import com.gamyeon.notif.application.port.in.event.NotifPublishEvent;
