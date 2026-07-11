@@ -29,16 +29,22 @@ public class ReportQueryService implements GetReportDetailUseCase, DeleteReportU
   private final LoadAnswerPort loadAnswerPort;
 
   // ── 상세 조회 ──────────────────────────────────────────────────────────────
-
+  /*
+   * 타 사용자의 리포트 조회 시도시, 404 반환
+   *
+   */
   @Override
   @Transactional(readOnly = true)
   public ReportDetailResponse getDetail(Long intvId, Long userId) {
     Report report =
         loadReportPort.findByIntvId(intvId).orElseThrow(() -> new ReportNotFoundException(intvId));
 
+    if (!report.getUserId().equals(userId)) {
+      throw new ReportNotFoundException(intvId);
+    }
+
     Intv intv = loadIntvPort.findById(intvId).orElse(null);
     List<Answer> answers = loadAnswerPort.findByIntvIdOrderByAnswerOrder(intvId);
-
     return ReportDetailResponse.builder()
         .intvId(intvId)
         .intvStatus(intv != null ? intv.getStatus().name() : null)
