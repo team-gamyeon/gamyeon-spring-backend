@@ -40,6 +40,8 @@ public class ReportQueryService implements GetReportDetailUseCase, DeleteReportU
         loadReportPort.findByIntvId(intvId).orElseThrow(() -> new ReportNotFoundException(intvId));
 
     if (!report.getUserId().equals(userId)) {
+      log.warn("[Report] 권한 없는 접근 시도 - intvId={}, requestUserId={}, ownerUserId={}",
+              intvId, userId, report.getUserId());
       throw new ReportNotFoundException(intvId);
     }
 
