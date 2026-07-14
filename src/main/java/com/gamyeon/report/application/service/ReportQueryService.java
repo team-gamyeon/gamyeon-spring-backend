@@ -2,6 +2,7 @@ package com.gamyeon.report.application.service;
 
 import com.gamyeon.answer.domain.Answer;
 import com.gamyeon.intv.domain.Intv;
+import com.gamyeon.report.application.exception.ReportAccessDeniedException;
 import com.gamyeon.report.application.exception.ReportNotFoundException;
 import com.gamyeon.report.application.port.in.DeleteReportUseCase;
 import com.gamyeon.report.application.port.in.GetReportDetailUseCase;
@@ -30,45 +31,50 @@ public class ReportQueryService implements GetReportDetailUseCase, DeleteReportU
 
   // ── 상세 조회 ──────────────────────────────────────────────────────────────
   /*
-   * 타 사용자의 리포트 조회 시도시, 404 반환
-   *
+   * 리포트가 존재하지 않거나, 타 사용자 소유인 경우 모두 403 반환
+   * (존재 여부 노출 방지를 위해 두 케이스를 동일하게 처리)
    */
   @Override
   @Transactional(readOnly = true)
   public ReportDetailResponse getDetail(Long intvId, Long userId) {
-    Report report =
-        loadReportPort.findByIntvId(intvId).orElseThrow(() -> new ReportNotFoundException(intvId));
+    Report report = loadReportPort.findByIntvId(intvId).orElse(null);
 
-    if (!report.getUserId().equals(userId)) {
+    if (report == null || !report.getUserId().equals(userId)) {
       log.warn(
-          "[Report] 권한 없는 접근 시도 - intvId={}, requestUserId={}, ownerUserId={}",
-          intvId,
-          userId,
-          report.getUserId());
-      throw new ReportNotFoundException(intvId);
+              "[Report] 권한 없는 접근 시도 - intvId={}, requestUserId={}, ownerUserId={}",
+              intvId,
+              userId,
+              report != null ? report.getUserId() : null);
+      throw new ReportAccessDeniedException(intvId);
     }
 
     Intv intv = loadIntvPort.findById(intvId).orElse(null);
     List<Answer> answers = loadAnswerPort.findByIntvIdOrderByAnswerOrder(intvId);
     return ReportDetailResponse.builder()
-        .intvId(intvId)
-        .intvStatus(intv != null ? intv.getStatus().name() : null)
-        .reportStatus(report.getStatus().name())
-        .report(
-            report.getStatus().name().equals("SUCCEED") ? parseReportData(report, answers) : null)
-        .build();
+            .intvId(intvId)
+            .intvStatus(intv != null ? intv.getStatus().name() : null)
+            .reportStatus(report.getStatus().name())
+            .report(
+                    report.getStatus().name().equals("SUCCEED") ? parseReportData(report, answers) : null)
+            .build();
   }
 
   // ── 삭제 ──────────────────────────────────────────────────────────────────
-
+  /*
+   * 리포트가 존재하지 않거나, 타 사용자 소유인 경우 모두 403 반환
+   */
   @Override
   @Transactional
   public void delete(Long intvId, Long userId) {
-    Report report =
-        loadReportPort.findByIntvId(intvId).orElseThrow(() -> new ReportNotFoundException(intvId));
+    Report report = loadReportPort.findByIntvId(intvId).orElse(null);
 
-    if (!report.getUserId().equals(userId)) {
-      throw new ReportNotFoundException(intvId);
+    if (report == null || !report.getUserId().equals(userId)) {
+      log.warn(
+              "[Report] 권한 없는 삭제 시도 - intvId={}, requestUserId={}, ownerUserId={}",
+              intvId,
+              userId,
+              report != null ? report.getUserId() : null);
+      throw new ReportAccessDeniedException(intvId);
     }
 
     saveReportPort.delete(report);
