@@ -3,7 +3,6 @@ package com.gamyeon.report.application.service;
 import com.gamyeon.answer.domain.Answer;
 import com.gamyeon.intv.domain.Intv;
 import com.gamyeon.report.application.exception.ReportAccessDeniedException;
-import com.gamyeon.report.application.exception.ReportNotFoundException;
 import com.gamyeon.report.application.port.in.DeleteReportUseCase;
 import com.gamyeon.report.application.port.in.GetReportDetailUseCase;
 import com.gamyeon.report.application.port.out.LoadAnswerPort;
@@ -41,22 +40,22 @@ public class ReportQueryService implements GetReportDetailUseCase, DeleteReportU
 
     if (report == null || !report.getUserId().equals(userId)) {
       log.warn(
-              "[Report] 권한 없는 접근 시도 - intvId={}, requestUserId={}, ownerUserId={}",
-              intvId,
-              userId,
-              report != null ? report.getUserId() : null);
+          "[Report] 권한 없는 접근 시도 - intvId={}, requestUserId={}, ownerUserId={}",
+          intvId,
+          userId,
+          report != null ? report.getUserId() : null);
       throw new ReportAccessDeniedException(intvId);
     }
 
     Intv intv = loadIntvPort.findById(intvId).orElse(null);
     List<Answer> answers = loadAnswerPort.findByIntvIdOrderByAnswerOrder(intvId);
     return ReportDetailResponse.builder()
-            .intvId(intvId)
-            .intvStatus(intv != null ? intv.getStatus().name() : null)
-            .reportStatus(report.getStatus().name())
-            .report(
-                    report.getStatus().name().equals("SUCCEED") ? parseReportData(report, answers) : null)
-            .build();
+        .intvId(intvId)
+        .intvStatus(intv != null ? intv.getStatus().name() : null)
+        .reportStatus(report.getStatus().name())
+        .report(
+            report.getStatus().name().equals("SUCCEED") ? parseReportData(report, answers) : null)
+        .build();
   }
 
   // ── 삭제 ──────────────────────────────────────────────────────────────────
@@ -70,10 +69,10 @@ public class ReportQueryService implements GetReportDetailUseCase, DeleteReportU
 
     if (report == null || !report.getUserId().equals(userId)) {
       log.warn(
-              "[Report] 권한 없는 삭제 시도 - intvId={}, requestUserId={}, ownerUserId={}",
-              intvId,
-              userId,
-              report != null ? report.getUserId() : null);
+          "[Report] 권한 없는 삭제 시도 - intvId={}, requestUserId={}, ownerUserId={}",
+          intvId,
+          userId,
+          report != null ? report.getUserId() : null);
       throw new ReportAccessDeniedException(intvId);
     }
 
