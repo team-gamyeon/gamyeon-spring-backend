@@ -10,11 +10,13 @@ import com.gamyeon.user.application.port.outbound.OAuthPort;
 import com.gamyeon.user.application.port.outbound.RefreshTokenRepository;
 import com.gamyeon.user.application.port.outbound.TokenPort;
 import com.gamyeon.user.application.port.outbound.UserRepository;
+import com.gamyeon.user.domain.AccountDeletionDeadlinePolicy;
 import com.gamyeon.user.domain.OAuthProvider;
 import com.gamyeon.user.domain.RefreshToken;
 import com.gamyeon.user.domain.User;
 import com.gamyeon.user.domain.UserDomainException;
 import com.gamyeon.user.domain.UserErrorCode;
+import io.jsonwebtoken.JwtException;
 import org.springframework.transaction.annotation.Transactional;
 
 public class AuthService implements AuthUseCase {
@@ -24,6 +26,7 @@ public class AuthService implements AuthUseCase {
   private final OAuthPort oAuthPort;
   private final TokenPort tokenPort;
   private final NicknameResolver nicknameResolver;
+  private final AccountDeletionDeadlinePolicy deadlinePolicy;
 
   public AuthService(
       UserRepository userRepository,
@@ -31,11 +34,30 @@ public class AuthService implements AuthUseCase {
       OAuthPort oAuthPort,
       TokenPort tokenPort,
       NicknameResolver nicknameResolver) {
+    this(
+        userRepository,
+        refreshTokenRepository,
+        oAuthPort,
+        tokenPort,
+        nicknameResolver,
+        new AccountDeletionDeadlinePolicy(
+            java.time.Clock.system(AccountDeletionDeadlinePolicy.DEFAULT_ZONE),
+            AccountDeletionDeadlinePolicy.DEFAULT_ZONE));
+  }
+
+  public AuthService(
+      UserRepository userRepository,
+      RefreshTokenRepository refreshTokenRepository,
+      OAuthPort oAuthPort,
+      TokenPort tokenPort,
+      NicknameResolver nicknameResolver,
+      AccountDeletionDeadlinePolicy deadlinePolicy) {
     this.userRepository = userRepository;
     this.refreshTokenRepository = refreshTokenRepository;
     this.oAuthPort = oAuthPort;
     this.tokenPort = tokenPort;
     this.nicknameResolver = nicknameResolver;
+    this.deadlinePolicy = deadlinePolicy;
   }
 
   public LoginResult login(OAuthLoginCommand command) {
@@ -59,6 +81,15 @@ public class AuthService implements AuthUseCase {
                       User.create(email, nickname, provider, oAuthUserInfo.getProviderId());
                   return userRepository.save(newUser);
                 });
+
+    if (user.isWithdrew()) {
+      if (!deadlinePolicy.isRestorable(user.getWithdrawnAt())) {
+        throw new UserDomainException(UserErrorCode.ACCOUNT_NOT_RESTORABLE);
+      }
+      return LoginResult.restoreRequired(
+          tokenPort.createRestoreToken(user.getId(), user.getProvider()),
+          deadlinePolicy.deletionDeadline(user.getWithdrawnAt()));
+    }
 
     ensureLoginAllowed(user);
 
@@ -95,6 +126,33 @@ public class AuthService implements AuthUseCase {
   @Transactional
   public void logout(Long userId) {
     refreshTokenRepository.deleteByUserId(userId);
+  }
+
+  @Override
+  @Transactional
+  public LoginResult restore(String restoreTokenValue) {
+    TokenPort.RestoreTokenClaims claims;
+    try {
+      claims = tokenPort.getRestoreTokenClaims(restoreTokenValue);
+    } catch (JwtException | IllegalArgumentException e) {
+      throw new UserDomainException(UserErrorCode.INVALID_RESTORE_TOKEN);
+    }
+
+    User user =
+        userRepository
+            .findByIdForUpdate(claims.userId())
+            .orElseThrow(() -> new UserDomainException(UserErrorCode.ACCOUNT_NOT_RESTORABLE));
+
+    if (user.getProvider() != claims.provider()
+        || !user.isWithdrew()
+        || !deadlinePolicy.isRestorable(user.getWithdrawnAt())) {
+      throw new UserDomainException(UserErrorCode.ACCOUNT_NOT_RESTORABLE);
+    }
+
+    user.restore();
+    userRepository.save(user);
+    refreshTokenRepository.deleteByUserId(user.getId());
+    return issueTokens(user);
   }
 
   private String resolveEmail(OAuthProvider provider, OAuthPort.OAuthUserInfo userInfo) {
