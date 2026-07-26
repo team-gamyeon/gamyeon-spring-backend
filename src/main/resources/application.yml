@@ -61,6 +61,13 @@ jwt:
   refresh-token-expiry: 604800000
   refresh-token-cleanup:
     cron: "0 0 3 * * *"   # 매일 새벽 3시 만료 토큰 정리
+  restore-token-expiry: 600000
+
+user:
+  account-deletion:
+    cron: "0 0 0 * * *"
+    zone: "Asia/Seoul"
+    batch-size: 100
 
 ai:
   server:
