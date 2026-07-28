@@ -33,6 +33,7 @@ public class SecurityConfig {
                 auth.requestMatchers(
                         "/api/v1/auth/login/**",
                         "/api/v1/auth/reissue",
+                        "/api/v1/auth/account/restore",
                         "/internal/**",
                         "/health",
                         "/actuator/**")
