@@ -10,6 +10,7 @@ import com.gamyeon.user.domain.OAuthProvider;
 import com.gamyeon.user.domain.UserSuccessCode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -44,6 +45,10 @@ public class AuthController {
             request.codeVerifier(),
             request.redirectUri());
     LoginResult result = authUseCase.login(command);
+    if (result.isRestoreRequired()) {
+      return ResponseEntity.ok(
+          SuccessResponse.of(UserSuccessCode.ACCOUNT_RESTORE_REQUIRED, LoginResponse.from(result)));
+    }
     return ResponseEntity.ok(
         SuccessResponse.of(UserSuccessCode.USER_LOGIN, LoginResponse.from(result)));
   }
@@ -66,6 +71,16 @@ public class AuthController {
     return ResponseEntity.ok(SuccessResponse.of(UserSuccessCode.USER_LOGOUT, null));
   }
 
+  @PostMapping("/account/restore")
+  public ResponseEntity<SuccessResponse<LoginResponse>> restore(
+      @Valid @RequestBody RestoreRequest request) {
+    log.info("Received account restore request.");
+
+    LoginResult result = authUseCase.restore(request.restoreToken());
+    return ResponseEntity.ok(
+        SuccessResponse.of(UserSuccessCode.USER_RESTORED, LoginResponse.from(result)));
+  }
+
   private OAuthProvider parseProvider(String provider) {
     return switch (provider.toLowerCase()) {
       case "google" -> OAuthProvider.GOOGLE;
@@ -81,10 +96,21 @@ public class AuthController {
 
   public record ReissueRequest(@NotBlank String refreshToken) {}
 
-  public record LoginResponse(String accessToken, String refreshToken, UserResponse user) {
+  public record RestoreRequest(@NotBlank String restoreToken) {}
+
+  public record LoginResponse(
+      String accessToken,
+      String refreshToken,
+      UserResponse user,
+      String restoreToken,
+      LocalDateTime restorableUntil) {
     public static LoginResponse from(LoginResult result) {
       return new LoginResponse(
-          result.getAccessToken(), result.getRefreshToken(), UserResponse.from(result.getUser()));
+          result.getAccessToken(),
+          result.getRefreshToken(),
+          result.getUser() == null ? null : UserResponse.from(result.getUser()),
+          result.getRestoreToken(),
+          result.getRestorableUntil());
     }
   }
 }

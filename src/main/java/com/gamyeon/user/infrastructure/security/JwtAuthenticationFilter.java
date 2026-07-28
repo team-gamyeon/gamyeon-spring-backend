@@ -5,6 +5,7 @@ import com.gamyeon.common.exception.CommonErrorCode;
 import com.gamyeon.common.response.ApiResponse;
 import com.gamyeon.common.response.ErrorCode;
 import com.gamyeon.user.application.port.outbound.TokenPort;
+import com.gamyeon.user.application.port.outbound.UserRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -26,17 +27,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       List.of(
           "/api/v1/auth/login/**",
           "/api/v1/auth/reissue",
+          "/api/v1/auth/account/restore",
           "/internal/**",
           "/health",
           "/actuator/**");
 
   private final TokenPort tokenPort;
   private final ObjectMapper objectMapper;
+  private final UserRepository userRepository;
   private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
   public JwtAuthenticationFilter(TokenPort tokenPort, ObjectMapper objectMapper) {
+    this(tokenPort, objectMapper, null);
+  }
+
+  public JwtAuthenticationFilter(
+      TokenPort tokenPort, ObjectMapper objectMapper, UserRepository userRepository) {
     this.tokenPort = tokenPort;
     this.objectMapper = objectMapper;
+    this.userRepository = userRepository;
   }
 
   @Override
@@ -61,6 +70,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     try {
       Long userId = tokenPort.getUserId(token);
+      if (userRepository != null
+          && userRepository.findById(userId).filter(user -> user.isActive()).isEmpty()) {
+        writeError(response, CommonErrorCode.UNAUTHORIZED);
+        return;
+      }
 
       UsernamePasswordAuthenticationToken auth =
           new UsernamePasswordAuthenticationToken(userId, null, List.of());
