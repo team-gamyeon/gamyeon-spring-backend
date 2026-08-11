@@ -1,6 +1,7 @@
 package com.gamyeon.report.application.service;
 
 import com.gamyeon.answer.domain.Answer;
+import com.gamyeon.common.storage.application.port.out.StoragePresignedUrlPort;
 import com.gamyeon.intv.domain.Intv;
 import com.gamyeon.report.application.exception.ReportAccessDeniedException;
 import com.gamyeon.report.application.port.in.DeleteReportUseCase;
@@ -27,6 +28,7 @@ public class ReportQueryService implements GetReportDetailUseCase, DeleteReportU
   private final SaveReportPort saveReportPort;
   private final LoadIntvPort loadIntvPort;
   private final LoadAnswerPort loadAnswerPort;
+  private final StoragePresignedUrlPort storagePresignedUrlPort;
 
   // ── 상세 조회 ──────────────────────────────────────────────────────────────
   /*
@@ -80,7 +82,6 @@ public class ReportQueryService implements GetReportDetailUseCase, DeleteReportU
   }
 
   // ── report_data jsonb + Answer 미디어 파싱 ────────────────────────────────
-
   @SuppressWarnings("unchecked")
   private ReportDetailResponse.ReportDetail parseReportData(Report report, List<Answer> answers) {
     if (report.getReportData() == null) return null;
@@ -128,7 +129,10 @@ public class ReportQueryService implements GetReportDetailUseCase, DeleteReportU
                                   ? (List<String>) map.get("feedback_badges")
                                   : new ArrayList<>())
                           .feedback(feedback)
-                          .mediaUrl(answer != null ? answer.getFileUrl() : null)
+                          .mediaUrl(
+                              answer != null && answer.getFileUrl() != null
+                                  ? storagePresignedUrlPort.createReadUrl(answer.getFileUrl())
+                                  : null)
                           .build();
                     })
                 .toList();
