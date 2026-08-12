@@ -29,7 +29,7 @@ public class ReportController {
         ReportSuccessCode.REPORT_DETAIL_SUCCESS, getReportDetailUseCase.getDetail(intvId, userId));
   }
 
-  @DeleteMapping("/{intvId}")
+  @DeleteMapping("/delete/{intvId}")
   public ResponseEntity<ApiResponse<Void>> delete(
       @PathVariable Long intvId, @AuthenticationPrincipal Long userId // userId = 1L 하드코딩 제거
       ) {
