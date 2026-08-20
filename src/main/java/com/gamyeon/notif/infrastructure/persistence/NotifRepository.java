@@ -10,7 +10,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-/** 통합된 Notif 엔티티를 사용하는 Repository 인터페이스입니다. */
 @Repository
 public interface NotifRepository extends JpaRepository<Notif, Long> {
 
@@ -35,4 +34,11 @@ public interface NotifRepository extends JpaRepository<Notif, Long> {
   @Modifying(clearAutomatically = true)
   @Query("UPDATE Notif n SET n.isRead = true WHERE n.userId = :userId AND n.isRead = false")
   void markAllAsReadByUserId(@Param("userId") Long userId);
+
+  // 유저가 이미 받은 공지사항인지 걸러내기
+  // 기존에 받은 공지사항 ID 목록만 가져오는 가벼운 쿼리를 하나 추가
+  @org.springframework.data.jpa.repository.Query(
+      "SELECT n.noticeId FROM Notif n WHERE n.userId = :userId AND n.type = 'NOTICE'")
+  java.util.List<Long> findReceivedNoticeIdsByUserId(
+      @org.springframework.data.repository.query.Param("userId") Long userId);
 }
