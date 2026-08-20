@@ -27,8 +27,11 @@ class NotifServiceTest {
 
   @Mock private NotifRepository notifRepository;
 
+  //  새롭게 추가된 의존성 Mock 객체 주입
+  @Mock private NoticeSyncService noticeSyncService;
+
   @Test
-  @DisplayName("SSE 구독을 요청하면 SseEmitter 객체를 반환하고 초기 연결 이벤트를 발송한다.")
+  @DisplayName("SSE 구독을 요청하면 SseEmitter 객체를 반환하고 초기 연결 이벤트를 발송하며 공지사항 동기화를 트리거한다.")
   void subscribe_success() {
     // given
     Long userId = 100L;
@@ -39,6 +42,9 @@ class NotifServiceTest {
     // then
     assertThat(emitter).isNotNull();
     assertThat(emitter.getTimeout()).isEqualTo(60L * 1000 * 5);
+
+    // 공지사항 동기화 로직이 1번 잘 호출되었는지 검증
+    verify(noticeSyncService, times(1)).syncMissingNoticesAsync(userId);
   }
 
   @Test
