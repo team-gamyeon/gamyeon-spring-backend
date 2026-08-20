@@ -32,7 +32,7 @@ public class NoticeSyncService {
     try {
       // 1. 유저가 이미 받은 공지사항 ID 목록 세팅
       Set<Long> receivedNoticeIds =
-          notifRepository.findReceivedNoticeIdsByUserId(userId).stream()
+          notifRepository.findReceivedNoticeIdsByUserId(userId, NotifType.NOTICE).stream()
               .collect(Collectors.toSet());
 
       // 2. 대시보드 모듈에서 전체 공지사항 조회

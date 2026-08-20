@@ -35,10 +35,11 @@ public interface NotifRepository extends JpaRepository<Notif, Long> {
   @Query("UPDATE Notif n SET n.isRead = true WHERE n.userId = :userId AND n.isRead = false")
   void markAllAsReadByUserId(@Param("userId") Long userId);
 
-  // 유저가 이미 받은 공지사항인지 걸러내기
-  // 기존에 받은 공지사항 ID 목록만 가져오는 가벼운 쿼리를 하나 추가
+  // 알람 최초 접속시, 중복 수신 방지
   @org.springframework.data.jpa.repository.Query(
-      "SELECT n.noticeId FROM Notif n WHERE n.userId = :userId AND n.type = 'NOTICE'")
+      "SELECT n.noticeId FROM Notif n WHERE n.userId = :userId AND n.type = :type")
   java.util.List<Long> findReceivedNoticeIdsByUserId(
-      @org.springframework.data.repository.query.Param("userId") Long userId);
+      @org.springframework.data.repository.query.Param("userId") Long userId,
+      @org.springframework.data.repository.query.Param("type")
+          com.gamyeon.notif.domain.NotifType type);
 }
