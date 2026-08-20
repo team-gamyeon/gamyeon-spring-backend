@@ -110,7 +110,18 @@ public class IntvApplicationService
   public void finish(ChangeStateIntvCommand command) {
     Intv intv = getOwnedIntv(command.userId(), command.intvId());
     intv.finish();
+
+    // 기존 도메인 이벤트 발행
     eventPublisher.publishEvent(new InterviewFinishedEvent(intv.getId(), intv.getUserId()));
+
+    // 실시간 알림 이벤트 발행
+    eventPublisher.publishEvent(
+        new com.gamyeon.notif.application.port.in.event.NotifPublishEvent(
+            intv.getUserId(),
+            com.gamyeon.notif.domain.NotifType.REPORT_PROCESSING,
+            "면접 완료",
+            "면접 분석이 시작되었어요.",
+            intv.getId()));
   }
 
   @Override

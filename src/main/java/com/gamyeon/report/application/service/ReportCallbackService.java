@@ -9,6 +9,7 @@ import com.gamyeon.report.presentation.dto.request.ReportWebhookRequest;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ public class ReportCallbackService implements ReportCallbackUseCase {
   private final LoadReportPort loadReportPort;
   private final SaveReportPort saveReportPort;
   private final ObjectMapper objectMapper;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Override
   @Transactional
@@ -66,12 +68,30 @@ public class ReportCallbackService implements ReportCallbackUseCase {
           );
 
       log.info("[Report] 리포트 생성 완료 - intvId={}", request.getIntvId());
+
+      // [Hotfix 추가] 리포트 분석 완료 알림! (Report 엔티티가 가진 userId 활용)
+      eventPublisher.publishEvent(
+          new com.gamyeon.notif.application.port.in.event.NotifPublishEvent(
+              report.getUserId(),
+              com.gamyeon.notif.domain.NotifType.REPORT_SUCCESS,
+              "분석 리포트 도착",
+              "면접 분석 리포트가 완성되었습니다",
+              report.getIntvId()));
     } else {
       report.fail();
       log.warn(
           "[Report] 리포트 생성 실패 혹은 데이터 누락 - intvId={}, errorMessage={}",
           request.getIntvId(),
           request.getErrorMessage());
+
+      // 리포트 분석 실패 알림
+      eventPublisher.publishEvent(
+          new com.gamyeon.notif.application.port.in.event.NotifPublishEvent(
+              report.getUserId(),
+              com.gamyeon.notif.domain.NotifType.REPORT_FAILED,
+              "면접 분석 실패",
+              "면접 분석 실패로 리포트를 발행할 수 없습니다",
+              report.getIntvId()));
     }
 
     // 4. 최종 상태 저장

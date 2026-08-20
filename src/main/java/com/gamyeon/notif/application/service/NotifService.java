@@ -30,14 +30,13 @@ public class NotifService
         CreateNotifUseCase {
 
   private final NotifRepository notifRepository;
+  private final NoticeSyncService noticeSyncService;
 
   // 유저별 SSE 연결을 관리하는 메모리 저장소
   private final Map<Long, SseEmitter> emitterRepository = new ConcurrentHashMap<>();
 
   // SSE 타임아웃 5분 (Nginx 등 인프라 설정과 조율 필요)
   private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 5;
-
-  // ※ NotifService.java 내부 추가
 
   @Override
   @Transactional
@@ -71,6 +70,8 @@ public class NotifService
       emitterRepository.get(userId).complete();
       emitterRepository.remove(userId);
     }
+    // 1.5 비동기 공지사항 동기화 트리거 (메인 스레드 블로킹 없음)
+    noticeSyncService.syncMissingNoticesAsync(userId);
 
     // 2. 새로운 Emitter 생성 및 저장
     SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
