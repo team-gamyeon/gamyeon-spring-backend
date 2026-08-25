@@ -15,7 +15,7 @@ public class NotifCleanupScheduler {
   private final NotifService notifService;
   private static final int RETENTION_DAYS = 7; // 알림 보관 주기: 7일
 
-  /** 매일 새벽 4시 0분 0초에 동작합니다. (트래픽이 가장 적은 시간대 선정) */
+  /** 매일 새벽 4시 0분 0초에 동작합니다. */
   @Scheduled(cron = "0 0 4 * * *")
   public void scheduleOldNotificationCleanup() {
     log.info("오래된 알림 데이터 배치 청소 스케줄러 가동");
