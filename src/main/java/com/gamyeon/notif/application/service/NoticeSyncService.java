@@ -42,13 +42,13 @@ public class NoticeSyncService {
       for (Notice notice : allNotices) {
         if (!receivedNoticeIds.contains(notice.getId())) {
 
-          // 기존에 만들어둔 알림 이벤트 재활용 (자동으로 DB저장 + SSE 푸시까지 연결됨)
+          // 기존에 만들어둔 알림 이벤트 재활용 (자동으로 DB저장 + SSE 푸시까지 연결)
           eventPublisher.publishEvent(
               new NotifPublishEvent(
                   userId,
                   NotifType.NOTICE,
-                  "새로운 공지사항", // 기획에 맞게 수정 가능
-                  "중요한 새 공지가 등록되었습니다.", // notice 엔티티에 content가 있다면 notice.getContent() 사용
+                  notice.getTitle(), // 공지 제목
+                  notice.getContent(), // 공지 내용
                   notice.getId()));
 
           log.info("[NoticeSync] 유저 {}에게 누락된 공지사항(ID: {}) 동기화 이벤트 발행 완료", userId, notice.getId());
