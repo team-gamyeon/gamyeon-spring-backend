@@ -166,7 +166,6 @@ public class NotifService
   }
 
   // ================= [ 스케줄러 지원용 비즈니스 로직 ] =================
-
   /** [하트비트 발송] 연결된 모든 유저에게 ping 데이터를 쏩니다. (발송 실패 시 연결이 끊긴 것으로 판단하고 즉시 Map에서 청소) */
   public void sendHeartbeat() {
     emitterRepository.forEach(
