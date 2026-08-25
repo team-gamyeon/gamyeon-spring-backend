@@ -57,6 +57,16 @@ public class IntvApplicationService
   private final PreparationUseCase preparationUseCase;
   private final ApplicationEventPublisher eventPublisher;
 
+  private static final int TITLE_MAX_LENGTH = 255;
+
+  private String buildNotifTitle(String label, String intvTitle) {
+    String base = (intvTitle != null && !intvTitle.isBlank()) ? intvTitle : "면접";
+    String combined = "[" + label + "] " + base;
+    return combined.length() > TITLE_MAX_LENGTH
+        ? combined.substring(0, TITLE_MAX_LENGTH)
+        : combined;
+  }
+
   public IntvApplicationService(
       IntvRepository intvRepository,
       QuestionSetRepository questionSetRepository,
@@ -111,15 +121,13 @@ public class IntvApplicationService
     Intv intv = getOwnedIntv(command.userId(), command.intvId());
     intv.finish();
 
-    // 기존 도메인 이벤트 발행
     eventPublisher.publishEvent(new InterviewFinishedEvent(intv.getId(), intv.getUserId()));
 
-    // 실시간 알림 이벤트 발행
     eventPublisher.publishEvent(
         new com.gamyeon.notif.application.port.in.event.NotifPublishEvent(
             intv.getUserId(),
             com.gamyeon.notif.domain.NotifType.REPORT_PROCESSING,
-            "면접 완료",
+            buildNotifTitle("면접 완료", intv.getTitle()),
             "면접 분석이 시작되었어요.",
             intv.getId()));
   }

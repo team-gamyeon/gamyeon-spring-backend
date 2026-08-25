@@ -1,6 +1,8 @@
 package com.gamyeon.report.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gamyeon.intv.domain.Intv;
+import com.gamyeon.intv.domain.IntvRepository;
 import com.gamyeon.report.application.port.in.ReportCallbackUseCase;
 import com.gamyeon.report.application.port.out.LoadReportPort;
 import com.gamyeon.report.application.port.out.SaveReportPort;
@@ -18,10 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ReportCallbackService implements ReportCallbackUseCase {
 
+  private static final int TITLE_MAX_LENGTH = 255;
+
   private final LoadReportPort loadReportPort;
   private final SaveReportPort saveReportPort;
   private final ObjectMapper objectMapper;
   private final ApplicationEventPublisher eventPublisher;
+  private final IntvRepository intvRepository;
 
   @Override
   @Transactional
@@ -36,6 +41,14 @@ public class ReportCallbackService implements ReportCallbackUseCase {
             .orElseThrow(
                 () ->
                     new IllegalArgumentException("존재하지 않는 리포트입니다. intvId: " + request.getIntvId()));
+
+    // 1.5 알림 제목에 사용할 면접(Intv) 제목 조회
+    Intv intv =
+        intvRepository
+            .findById(report.getIntvId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("존재하지 않는 면접입니다. intvId: " + report.getIntvId()));
+    String intvTitle = intv.getTitle();
 
     // 2. 상태에 따른 처리
     if ("SUCCEED".equals(request.getStatus()) && request.getReport() != null) {
@@ -69,12 +82,12 @@ public class ReportCallbackService implements ReportCallbackUseCase {
 
       log.info("[Report] 리포트 생성 완료 - intvId={}", request.getIntvId());
 
-      // 리포트 분석 완료 알림 (Report 엔티티가 가진 userId 활용)
+      // SUCCEED 분기
       eventPublisher.publishEvent(
           new com.gamyeon.notif.application.port.in.event.NotifPublishEvent(
               report.getUserId(),
               com.gamyeon.notif.domain.NotifType.REPORT_SUCCESS,
-              "분석 리포트 도착",
+              buildNotifTitle("분석 리포트 도착", intvTitle),
               "면접 분석 리포트가 완성되었습니다",
               report.getIntvId()));
     } else {
@@ -89,12 +102,22 @@ public class ReportCallbackService implements ReportCallbackUseCase {
           new com.gamyeon.notif.application.port.in.event.NotifPublishEvent(
               report.getUserId(),
               com.gamyeon.notif.domain.NotifType.REPORT_FAILED,
-              "면접 분석 실패",
+              buildNotifTitle("분석 실패", intvTitle),
               "면접 분석 실패로 리포트를 발행할 수 없습니다",
               report.getIntvId()));
     }
 
+    log.info("[Report] intvId={}, intvTitle='{}'", report.getIntvId(), intvTitle);
+
     // 4. 최종 상태 저장
     saveReportPort.save(report);
+  }
+
+  private String buildNotifTitle(String label, String intvTitle) {
+    String base = (intvTitle != null && !intvTitle.isBlank()) ? intvTitle : "면접";
+    String combined = "[" + label + "] " + base;
+    return combined.length() > TITLE_MAX_LENGTH
+        ? combined.substring(0, TITLE_MAX_LENGTH)
+        : combined;
   }
 }
