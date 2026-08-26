@@ -47,7 +47,7 @@ public class NoticeSyncService {
               new NotifPublishEvent(
                   userId,
                   NotifType.NOTICE,
-                  notice.getTitle(), // 공지 제목
+                  "[공지] " + notice.getTitle(),
                   notice.getContent(), // 공지 내용
                   notice.getId()));
 

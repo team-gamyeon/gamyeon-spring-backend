@@ -113,9 +113,15 @@ public class ReportCallbackService implements ReportCallbackUseCase {
     saveReportPort.save(report);
   }
 
-  private String buildNotifTitle(String label, String intvTitle) {
-    String base = (intvTitle != null && !intvTitle.isBlank()) ? intvTitle : "면접";
-    String combined = "[" + label + "] " + base;
+  /**
+   * "[태그] 제목" 형식의 알림 제목을 만듭니다. 제목이 없거나 빈 값이면 "면접"으로 대체하고, DB 컬럼 길이(255자)를 넘지 않도록 자릅니다.
+   *
+   * @param tag 알림 유형 태그 (예: "분석중")
+   * @param baseTitle 면접 제목
+   */
+  private String buildNotifTitle(String tag, String baseTitle) {
+    String base = (baseTitle != null && !baseTitle.isBlank()) ? baseTitle : "면접";
+    String combined = "[" + tag + "] " + base;
     return combined.length() > TITLE_MAX_LENGTH
         ? combined.substring(0, TITLE_MAX_LENGTH)
         : combined;
