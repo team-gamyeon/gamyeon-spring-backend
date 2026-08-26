@@ -82,7 +82,7 @@ public class ReportCallbackService implements ReportCallbackUseCase {
 
       log.info("[Report] 리포트 생성 완료 - intvId={}", request.getIntvId());
 
-      // SUCCEED 분기
+      // 리포트 분석 완료 알림 (Report 엔티티가 가진 userId 활용)
       eventPublisher.publishEvent(
           new com.gamyeon.notif.application.port.in.event.NotifPublishEvent(
               report.getUserId(),
