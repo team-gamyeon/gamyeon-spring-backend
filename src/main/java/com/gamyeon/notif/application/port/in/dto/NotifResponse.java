@@ -1,22 +1,28 @@
 package com.gamyeon.notif.application.port.in.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.gamyeon.notif.domain.Notif;
 import com.gamyeon.notif.domain.NotifType;
 import java.time.LocalDateTime;
 import lombok.Builder;
 
-/** 프론트엔드 API 규격에 맞춘 단건 알림 응답 DTO입니다. camelCase 필드명으로 직렬화됩니다. */
 @Builder
 public record NotifResponse(
-    Long notifId,
-    String notifType,
-    String title,
-    String content,
-    Long targetId,
-    boolean isRead,
-    LocalDateTime createdAt) {
+    @JsonProperty("notifId") Long notifId,
+    @JsonProperty("notifType") String notifType,
+    @JsonProperty("title") String title,
+    @JsonProperty("content") String content,
+    @JsonProperty("targetId") Long targetId,
+
+    // Jackson이 멋대로 'read'로 이름을 바꾸는 것을 차단
+    @JsonProperty("isRead") boolean isRead,
+
+    //  배열([2026,8,20])이 아닌 프론트가 원하는 문자열(String) 포맷으로 강제 변환
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonProperty("createdAt")
+        LocalDateTime createdAt) {
   public static NotifResponse from(Notif notif) {
-    // NotifType에 따라 프론트엔드 라우팅용 targetId 결정
     Long targetId = (notif.getType() == NotifType.NOTICE) ? notif.getNoticeId() : notif.getIntvId();
 
     return NotifResponse.builder()

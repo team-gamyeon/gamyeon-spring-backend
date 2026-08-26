@@ -57,6 +57,22 @@ public class IntvApplicationService
   private final PreparationUseCase preparationUseCase;
   private final ApplicationEventPublisher eventPublisher;
 
+  private static final int TITLE_MAX_LENGTH = 255;
+
+  /**
+   * "[태그] 제목" 형식의 알림 제목을 만듭니다. 제목이 없거나 빈 값이면 "면접"으로 대체하고, DB 컬럼 길이(255자)를 넘지 않도록 자릅니다.
+   *
+   * @param tag 알림 유형 태그 (예: "분석중")
+   * @param baseTitle 면접 제목
+   */
+  private String buildNotifTitle(String tag, String baseTitle) {
+    String base = (baseTitle != null && !baseTitle.isBlank()) ? baseTitle : "면접";
+    String combined = "[" + tag + "] " + base;
+    return combined.length() > TITLE_MAX_LENGTH
+        ? combined.substring(0, TITLE_MAX_LENGTH)
+        : combined;
+  }
+
   public IntvApplicationService(
       IntvRepository intvRepository,
       QuestionSetRepository questionSetRepository,
@@ -110,7 +126,17 @@ public class IntvApplicationService
   public void finish(ChangeStateIntvCommand command) {
     Intv intv = getOwnedIntv(command.userId(), command.intvId());
     intv.finish();
+
     eventPublisher.publishEvent(new InterviewFinishedEvent(intv.getId(), intv.getUserId()));
+
+    // 실시간 알림 이벤트 발행
+    eventPublisher.publishEvent(
+        new com.gamyeon.notif.application.port.in.event.NotifPublishEvent(
+            intv.getUserId(),
+            com.gamyeon.notif.domain.NotifType.REPORT_PROCESSING,
+            buildNotifTitle("분석중", intv.getTitle()),
+            "면접 분석이 시작되었어요.",
+            intv.getId()));
   }
 
   @Override
